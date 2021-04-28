@@ -34,6 +34,34 @@ library(R2OpenBUGS)
 
 ### Introduction
 
+Araihazar, Bangladesh
+
+Many of the wells used for drinking water in Bangladesh and other South Asian
+countries are contaminated with natural arsenic, affecting an estimated 100 million people. Arsenic is a cumulative poison, and exposure increases the risk of cancer and other diseases, with risks estimated to be proportional to exposure.
+Any locality can include wells with a range of arsenic levels, as can be seen from the map in Figure 5.7 of all the wells in a collection of villages in a small area of Bangladesh. The bad news is that even if your neighbor’s well is safe, it does not mean that yours is safe. However, the corresponding good news is that, if your well has a high arsenic level, you can probably find a safe well nearby to get your water from—if you are willing to walk the distance and your neighbor is willing to share. (The amount of water needed for drinking is low enough that adding users to a well would not exhaust its capacity, and the surface water in this area is subject to
+contamination by microbes, hence the desire to use water from deep wells.)
+In the area shown in Figure 5.7, a research team from the United States and
+Bangladesh measured all the wells and labeled them with their arsenic level as well as a characterization as “safe” (below 0.5 in units of hundreds of micrograms per liter, the Bangladesh standard for arsenic in drinking water) or “unsafe” (above 0.5). People with unsafe wells were encouraged to switch to nearby private or community wells or to new wells of their own construction. A few years later, the researchers returned to find out who had switched wells. We shall perform a logistic regression analysis to understand the factors predictive
+of well switching among the users of unsafe wells. In the notation of the previous section, our outcome variable is
+
+yi = 1 if household i switched to a new well
+yi = 0 if household i continued using its own well
+
+We consider the following inputs:
+• A constant term
+• The distance (in meters) to the closest known safe well
+• The arsenic level of respondent’s well
+• Whether any members of the household are active in community organizations
+• The education level of the head of household.
+
+We shall first fit the model just using distance to nearest well and then put in
+arsenic concentration, organizational membership, and education.
+
+
+
+
+
+
 In this project, we attempted to determine the relationship (if any) between arsenic concentrations and well usage.
 
 ```{r}
@@ -41,7 +69,7 @@ In this project, we attempted to determine the relationship (if any) between ars
 
 # Read in the data
 
-# full <- read.csv ("C:\\Users\\naga2\\Documents\\Duke Spring '21\\STA 360L\\fulldata1.csv")
+full <- read.csv ("C:\\Users\\naga2\\Documents\\Duke Spring '21\\STA 360L\\fulldata1.csv")
 # all1 <- read.csv ("C:\\Users\\naga2\\Documents\\Duke Spring '21\\STA 360L\\All.csv")
 
 all <- read.dta ("all.dta", convert.factors=F)
