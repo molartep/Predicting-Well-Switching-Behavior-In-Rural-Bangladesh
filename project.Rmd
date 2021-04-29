@@ -39,8 +39,7 @@ Araihazar, Bangladesh
 Many of the wells used for drinking water in Bangladesh and other South Asian
 countries are contaminated with natural arsenic, affecting an estimated 100 million people. Arsenic is a cumulative poison, and exposure increases the risk of cancer and other diseases, with risks estimated to be proportional to exposure.
 Any locality can include wells with a range of arsenic levels, as can be seen from the map in Figure 5.7 of all the wells in a collection of villages in a small area of Bangladesh. The bad news is that even if your neighbor’s well is safe, it does not mean that yours is safe. However, the corresponding good news is that, if your well has a high arsenic level, you can probably find a safe well nearby to get your water from—if you are willing to walk the distance and your neighbor is willing to share. (The amount of water needed for drinking is low enough that adding users to a well would not exhaust its capacity, and the surface water in this area is subject to
-contamination by microbes, hence the desire to use water from deep wells.)
-In the area shown in Figure 5.7, a research team from the United States and
+contamination by microbes, hence the desire to use water from deep wells.) In the area shown in Figure 5.7, a research team from the United States and
 Bangladesh measured all the wells and labeled them with their arsenic level as well as a characterization as “safe” (below 0.5 in units of hundreds of micrograms per liter, the Bangladesh standard for arsenic in drinking water) or “unsafe” (above 0.5). People with unsafe wells were encouraged to switch to nearby private or community wells or to new wells of their own construction. A few years later, the researchers returned to find out who had switched wells. We shall perform a logistic regression analysis to understand the factors predictive
 of well switching among the users of unsafe wells. In the notation of the previous section, our outcome variable is
 
@@ -61,27 +60,36 @@ arsenic concentration, organizational membership, and education.
 
 
 
-
-In this project, we attempted to determine the relationship (if any) between arsenic concentrations and well usage.
-
 ```{r}
 # Set up cleaned dataset for Bangladesh well-switching
 
 # Read in the data
 
-full <- read.csv ("C:\\Users\\naga2\\Documents\\Duke Spring '21\\STA 360L\\fulldata1.csv")
-# all1 <- read.csv ("C:\\Users\\naga2\\Documents\\Duke Spring '21\\STA 360L\\All.csv")
-
 all <- read.dta ("all.dta", convert.factors=F)
 
-# For simplicity, pull out all wells with missing data in the variables that we
-# will be using in our analysis
+# For simplicity, pull out all wells with missing data in the variables that we will be using in our analysis
 
-missing <- is.na (all[,"func"] + all[,"as"] + all[,"distnearest"] + all[,"assn"] + all[,"ed"])
-table (missing)
+# according to well owner's wife/sister-in-law
+# survey of laypersons, not scientific experts
 
-# Include only the wells that are functioning (func==1) and "unsafe" (as>50)
+missing <- is.na (all[,"func"] + all[,"as"] + all[,"distnearest"] + all[,"assn"] + all[,"ed"] + all[,"ed4"] + all[, "drink"] + all[, "status"] + all[, "change"] + all[, "shifted"])
+table(missing)
 
+# with the added predictors, still only 12 missing out of 6510
+
+# recode change and shifted to 0/1
+
+# https://www.ldeo.columbia.edu/~avangeen/publications/documents/vanGeen_JESH_07.pdf
+
+# PREDICTIVE ACCURACY
+
+# try recoding: the levels of education among the 3020 respondents varied from 0 to 18 years, with nearly a third having zero. We repeated our analysis with a discrete recoding of the education variable (0 = 0 years, 1 = 1–8 years, 2 = 9–12 years, 3 = 12+ years), and our results were essentially unchanged. 
+
+# ed4: ed/4 - if ed is not a multiple of 4, ed4 truncates the quotient, e.g. ed = 10, ed4 = 10/4 = 2.5 -> 2 
+
+# perception of well safety; not based on arsenic concentrations (already know that every well in consideration is unsafe) -> see question 6 to explain potential biases, source of misinformation
+
+# Include only the wells that are functioning (func==1) - analysis does not consider preferences (switching for no apparent reason related to safety) and "unsafe" (as>50) - arsenic concentration mg/dL > 50
 keep <- all[,"func"]==1 & all[,"as"]>50
 attach.all (all[!missing & keep,])
 
@@ -90,16 +98,26 @@ attach.all (all[!missing & keep,])
 switch <- switch
 arsenic <- as/100
 dist <- distnearest
-assoc <- ifelse (assn>0,1,0)
+assoc <- ifelse (assn > 0, 1, 0)
 educ <- ed
+educ4 <- ed4
+use <- drink
+status_perceived <- status
+well_change <- change
+well_shift <- shifted
 
-wells.data <- cbind (switch, arsenic, dist, assoc, educ)
+wells.data <- cbind (switch, arsenic, dist, assoc, educ, educ4, use, status_perceived, well_change, well_shift)
 write.table (wells.data, "wells.dat")
 
 wells <- read.table("wells.dat", header = TRUE)
-seed <- 200
+
+
+## Stopping point
+
 
 # Logistic regression of switching on distance to nearest safe well
+
+seed <- 200
 
 fit1 <- stan_glm(switch ~ dist, data = wells,
                  family = binomial(link = "logit"), 
