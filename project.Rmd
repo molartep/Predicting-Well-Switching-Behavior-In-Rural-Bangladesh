@@ -30,6 +30,7 @@ library(rstan)
 library(HSAUR3)
 library(foreign)
 library(R2OpenBUGS)
+library(arm)
 ```
 
 ### Introduction
@@ -60,7 +61,7 @@ arsenic concentration, organizational membership, and education.
 
 
 
-```{r}
+```{r data}
 # Set up cleaned dataset for Bangladesh well-switching
 
 # Read in the data
@@ -103,7 +104,7 @@ educ <- ed
 educ4 <- ed4
 use <- drink
 status_perceived <- status
-well_change <- change
+well_change <- ifelse(change > 0, 1, 0)
 well_shift <- shifted
 
 wells.data <- cbind (switch, arsenic, dist, assoc, educ, educ4, use, status_perceived, well_change, well_shift)
@@ -111,21 +112,22 @@ write.table (wells.data, "wells.dat")
 
 wells <- read.table("wells.dat", header = TRUE)
 
-
+drinkorcook_wells <- wells[wells$use!=0,]
 ## Stopping point
+```
 
-
+```{r}
 # Logistic regression of switching on distance to nearest safe well
 
 seed <- 200
 
-fit1 <- stan_glm(switch ~ dist, data = wells,
+fit.1 <- stan_glm(switch ~ dist, data = wells,
                  family = binomial(link = "logit"), 
                  prior = normal(0,1), prior_intercept = normal(0,1),
                  seed = seed,
                  refresh = 0)
 
-print(fit1$stanfit)
+print(fit.1$stanfit)
 
 ### END of edited code
 
@@ -148,9 +150,9 @@ jitter.binary <- function(a, jitt=.05){
 }
 
 #postscript ("c:/books/multilevel/arsenic.logitfit.1new.a.ps", height=3.5, width=4, horizontal=TRUE)
-plot(c(0,max(dist, na.rm=TRUE)*1.02), c(0,1), xlab="Distance (in meters) to nearest safe well", ylab="Pr (switching)", type="n", xaxs="i", yaxs="i", mgp=c(2,.5,0))
-curve (invlogit(coef(fit.1)[1]+coef(fit.1)[2]*x), lwd=1, add=TRUE)
-points (dist, jitter.binary(switch), pch=20, cex=.1)
+#plot(c(0,max(dist, na.rm=TRUE)*1.02), c(0,1), xlab="Distance (in meters) to nearest safe well", ylab="Pr (switching)", type="n", xaxs="i", yaxs="i", mgp=c(2,.5,0))
+#curve (invlogit(coef(fit.1)[1]+coef(fit.1)[2]*x), lwd=1, add=TRUE)
+#points (dist, jitter.binary(switch), pch=20, cex=.1)
 #dev.off ()
 
 # histogram of As levels
