@@ -31,6 +31,7 @@ library(HSAUR3)
 library(foreign)
 library(R2OpenBUGS)
 library(arm)
+library(kableExtra)
 ```
 
 ### Introduction
@@ -116,11 +117,10 @@ educ <- ed
 educ4 <- ed4
 use <- drink
 status_perceived <- status
-well_change <- ifelse(change > 0, 1, 0)
 well_shift <- shifted
 
 wells.data <- cbind (switch, arsenic, dist, assoc, educ, educ4, use, 
-                     status_perceived, well_change, well_shift)
+                     status_perceived, well_shift)
 write.table (wells.data, "wells.dat")
 
 wells <- read.table("wells.dat", header = TRUE)
@@ -129,44 +129,97 @@ drinkorcook_wells <- wells[wells$use!=0,]
 ## Stopping point
 ```
 
-```{r EDA}
+```{r EDA, fig.width = 8, fig.height = 4}
 ### Continuous Predictors
-# Distances Histogram
+# Distances 
 hist(dist, breaks=seq(0,10+max(dist[!is.na(dist)]),10), 
-     xlab="Distance (in meters) to nearest safe well", ylab="Frequency", 
+     xlab="Distance (m) to nearest safe well", ylab="Frequency", 
      main="Distance to Wells")
-# Arsenic Histogram
+wells %>%
+  summarise(min = min(dist),
+            max = max(dist),
+            mean = mean(dist), 
+            sd = sd(dist), 
+            median = median(dist), 
+            IQR = IQR(dist)) %>%
+  kable(digits = 3)
+# Arsenic 
 hist(arsenic, breaks=seq(0,1+max(arsenic[!is.na(arsenic)]),0.5), 
-     xlab="Arsenic content (UNITS)", ylab="Frequency", main="Arsenic Content")
-# Education Histogram
+     xlab="Arsenic content (mg/dL)", ylab="Frequency", main="Arsenic Content")
+wells %>%
+  summarise(min = min(arsenic),
+            max = max(arsenic),
+            mean = mean(arsenic), 
+            sd = sd(arsenic), 
+            median = median(arsenic), 
+            IQR = IQR(arsenic)) %>%
+  kable(digits = 3)
+# Education 
 hist(educ, breaks=seq(0,5+max(educ[!is.na(educ)]),5), xlab="Years of Education",
      ylab="Frequency", main="Education")
+wells %>%
+  summarise(min = min(educ),
+            max = max(educ),
+            mean = mean(educ), 
+            sd = sd(educ), 
+            median = median(educ), 
+            IQR = IQR(educ)) %>%
+  kable(digits = 3)
 
 ### Discrete Predictors
+df <- data.frame(wells) %>%
+  mutate(switch = as.factor(switch),
+         arsenic = as.factor(arsenic),
+         dist = as.factor(dist),
+         assoc = as.factor(assoc),
+         educ = as.factor(educ),
+         educ4 = as.factor(educ4),
+         use = as.factor(use),
+         status_perceived = as.factor(status_perceived),
+         well_shift = as.factor(well_shift))
 # Community Association
 barplot(prop.table(table(assoc)), main = "Community Association", 
         xlab = "0 = No, 1 = Yes", ylab = "Proportion", ylim = c(0,0.6))
+ggplot(data = df, mapping = aes(x = assoc, fill = switch)) +
+  geom_bar(position = "fill") + 
+  labs (x = "Community Association*", y = "Percentage", 
+        caption = "*0 = No, 1 = Yes")
 # Education (Recoded)
 barplot(prop.table(table(educ4)), main = "Education (Recoded)", 
         xlab = "0 = 0,  1 = 1-8,  2 = 9-12,  3 = 12+ Years of Education", 
         ylab = "Proportion", ylim = c(0,0.4))
+ggplot(data = df, mapping = aes(x = educ4, fill = switch)) +
+  geom_bar(position = "fill") + 
+  labs (x = "Years of Education*", y = "Percentage", 
+        caption = "*0 = 0,  1 = 1-8,  2 = 9-12,  3 = 12+")
 # Use
 barplot(prop.table(table(use)), main = "Well Use", 
         xlab = "0 = Neither,  1 = Unfrequently,  2 = Drinking,  3 = Cooking", 
         ylab = "Proportion", ylim = c(0,0.6))
+ggplot(data = df, mapping = aes(x = use, fill = switch)) +
+  geom_bar(position = "fill") + 
+  labs (x = "Well Use*", y = "Percentage", 
+        caption = 
+          "*0 = Neither,  1 = Unfrequently,  2 = Drinking,  3 = Cooking")
 # Perceived Status
 barplot(prop.table(table(status_perceived)), main = "Perceived Status", 
         xlab = "0 = Unsafe,  1 = Safe,  2 = Don't Know", ylab = "Proportion", 
         ylim = c(0,0.9))
-# Change
-barplot(prop.table(table(well_change)), main = "Well Change (Last 3 Years)", 
-        xlab = "0 = No,  1 = Yes", ylab = "Proportion", ylim = c(0,0.6))
+ggplot(data = df, mapping = aes(x = status_perceived, fill = switch)) +
+  geom_bar(position = "fill") + 
+  labs (x = "Perceived Status*", y = "Percentage", 
+        caption = "*0 = Unsafe,  1 = Safe,  2 = Don't Know")
+
 # Shift
 barplot(prop.table(table(well_shift)), main = "Well Shift (Last 3 Years)", 
         xlab = "0 = No,  1 = Yes", ylab = "Proportion", ylim = c(0,1))
+ggplot(data = df, mapping = aes(x = well_shift, fill = switch)) +
+  geom_bar(position = "fill") + 
+  labs (x = "Well Shift (Last 3 Years)*", y = "Percentage", 
+        caption = "*0 = No,  1 = Yes")
 
 ### Response Variable
-barplot(prop.table(table(switch)), main = "Well Shift (Last 3 Years)", 
+barplot(prop.table(table(switch)), main = "Well Switch (Response)", 
         xlab = "0 = No,  1 = Yes", ylab = "Proportion", ylim = c(0,0.6))
 ```
 
