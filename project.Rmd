@@ -68,12 +68,15 @@ arsenic concentration, organizational membership, and education.
 
 all <- read.dta ("all.dta", convert.factors=F)
 
-# For simplicity, pull out all wells with missing data in the variables that we will be using in our analysis
+# For simplicity, pull out all wells with missing data in the variables that 
+# we will be using in our analysis
 
 # according to well owner's wife/sister-in-law
 # survey of laypersons, not scientific experts
 
-missing <- is.na (all[,"func"] + all[,"as"] + all[,"distnearest"] + all[,"assn"] + all[,"ed"] + all[,"ed4"] + all[, "drink"] + all[, "status"] + all[, "change"] + all[, "shifted"])
+missing <- is.na (all[,"func"] + all[,"as"] + all[,"distnearest"] + all[,"assn"]
+                  + all[,"ed"] + all[,"ed4"] + all[, "drink"] + all[, "status"]
+                  + all[, "change"] + all[, "shifted"])
 table(missing)
 
 # with the added predictors, still only 12 missing out of 6510
@@ -84,13 +87,22 @@ table(missing)
 
 # PREDICTIVE ACCURACY
 
-# try recoding: the levels of education among the 3020 respondents varied from 0 to 18 years, with nearly a third having zero. We repeated our analysis with a discrete recoding of the education variable (0 = 0 years, 1 = 1–8 years, 2 = 9–12 years, 3 = 12+ years), and our results were essentially unchanged. 
+# try recoding: the levels of education among the 3020 respondents varied from 
+# 0 to 18 years, with nearly a third having zero. We repeated our analysis with 
+# a discrete recoding of the education variable 
+# (0 = 0 years, 1 = 1–8 years, 2 = 9–12 years, 3 = 12+ years), 
+# and our results were essentially unchanged. 
 
-# ed4: ed/4 - if ed is not a multiple of 4, ed4 truncates the quotient, e.g. ed = 10, ed4 = 10/4 = 2.5 -> 2 
+# ed4: ed/4 - if ed is not a multiple of 4, ed4 truncates the quotient, 
+# e.g. ed = 10, ed4 = 10/4 = 2.5 -> 2 
 
-# perception of well safety; not based on arsenic concentrations (already know that every well in consideration is unsafe) -> see question 6 to explain potential biases, source of misinformation
+# perception of well safety; not based on arsenic concentrations 
+# (already know that every well in consideration is unsafe) -> see question 6 
+# to explain potential biases, source of misinformation
 
-# Include only the wells that are functioning (func==1) - analysis does not consider preferences (switching for no apparent reason related to safety) and "unsafe" (as>50) - arsenic concentration mg/dL > 50
+# Include only the wells that are functioning (func==1) - analysis does not 
+# consider preferences (switching for no apparent reason related to safety)
+# and "unsafe" (as>50) - arsenic concentration mg/dL > 50
 keep <- all[,"func"]==1 & all[,"as"]>50
 attach.all (all[!missing & keep,])
 
@@ -107,7 +119,8 @@ status_perceived <- status
 well_change <- ifelse(change > 0, 1, 0)
 well_shift <- shifted
 
-wells.data <- cbind (switch, arsenic, dist, assoc, educ, educ4, use, status_perceived, well_change, well_shift)
+wells.data <- cbind (switch, arsenic, dist, assoc, educ, educ4, use, 
+                     status_perceived, well_change, well_shift)
 write.table (wells.data, "wells.dat")
 
 wells <- read.table("wells.dat", header = TRUE)
@@ -115,6 +128,48 @@ wells <- read.table("wells.dat", header = TRUE)
 drinkorcook_wells <- wells[wells$use!=0,]
 ## Stopping point
 ```
+
+```{r EDA}
+### Continuous Predictors
+# Distances Histogram
+hist(dist, breaks=seq(0,10+max(dist[!is.na(dist)]),10), 
+     xlab="Distance (in meters) to nearest safe well", ylab="Frequency", 
+     main="Distance to Wells")
+# Arsenic Histogram
+hist(arsenic, breaks=seq(0,1+max(arsenic[!is.na(arsenic)]),0.5), 
+     xlab="Arsenic content (UNITS)", ylab="Frequency", main="Arsenic Content")
+# Education Histogram
+hist(educ, breaks=seq(0,5+max(educ[!is.na(educ)]),5), xlab="Years of Education",
+     ylab="Frequency", main="Education")
+
+### Discrete Predictors
+# Community Association
+barplot(prop.table(table(assoc)), main = "Community Association", 
+        xlab = "0 = No, 1 = Yes", ylab = "Proportion", ylim = c(0,0.6))
+# Education (Recoded)
+barplot(prop.table(table(educ4)), main = "Education (Recoded)", 
+        xlab = "0 = 0,  1 = 1-8,  2 = 9-12,  3 = 12+ Years of Education", 
+        ylab = "Proportion", ylim = c(0,0.4))
+# Use
+barplot(prop.table(table(use)), main = "Well Use", 
+        xlab = "0 = Neither,  1 = Unfrequently,  2 = Drinking,  3 = Cooking", 
+        ylab = "Proportion", ylim = c(0,0.6))
+# Perceived Status
+barplot(prop.table(table(status_perceived)), main = "Perceived Status", 
+        xlab = "0 = Unsafe,  1 = Safe,  2 = Don't Know", ylab = "Proportion", 
+        ylim = c(0,0.9))
+# Change
+barplot(prop.table(table(well_change)), main = "Well Change (Last 3 Years)", 
+        xlab = "0 = No,  1 = Yes", ylab = "Proportion", ylim = c(0,0.6))
+# Shift
+barplot(prop.table(table(well_shift)), main = "Well Shift (Last 3 Years)", 
+        xlab = "0 = No,  1 = Yes", ylab = "Proportion", ylim = c(0,1))
+
+### Response Variable
+barplot(prop.table(table(switch)), main = "Well Shift (Last 3 Years)", 
+        xlab = "0 = No,  1 = Yes", ylab = "Proportion", ylim = c(0,0.6))
+```
+
 
 ```{r}
 # Logistic regression of switching on distance to nearest safe well
@@ -141,12 +196,6 @@ fit.2 <- stan_glm(switch ~ dist100, data = wells,
 print(fit.2$stanfit)
 
 ### END OF EDITED CODE
-
-# histogram of distances
-
-#postscript ("c:/books/multilevel/arsenic.distances.bnew.ps", height=3, width=4, horizontal=TRUE)
-hist (dist, breaks=seq(0,10+max(dist[!is.na(dist)]),10), freq=TRUE, xlab="Distance (in meters) to nearest safe well", ylab="", main="", mgp=c(2,.5,0))
-#dev.off ()
 
 # plots of model fit
 
