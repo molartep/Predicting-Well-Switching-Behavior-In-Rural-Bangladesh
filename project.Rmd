@@ -112,12 +112,22 @@ attach.all (all[!missing & keep,])
 switch <- switch
 arsenic <- as/100
 dist <- distnearest
-assoc <- ifelse (assn > 0, 1, 0)
+assoc <- ifelse (assn > 0, "Yes", "No")
 educ <- ed
-educ4 <- ed4
-use <- drink
-status_perceived <- status
-well_shift <- shifted
+educ4 <- case_when(ed4 == 0 ~ "0",
+                   ed4 == 1 ~ "1-8",
+                   ed4 == 2 ~ "9-12",
+                   ed4 == 3 ~ "12+")
+use <- case_when(drink == 0 ~ "Neither",
+                 drink == 1 ~ "Unfrequently",
+                 drink == 2 ~ "Drinking",
+                 drink == 3 ~ "Cooking",
+                 drink == 13 ~ "Cooking",
+                 drink == 23 ~ "Both")
+status_perceived <- case_when(status == 0 ~ "Unsafe",
+                              status == 1 ~ "Safe",
+                              status == 2 ~ "Don't Know")
+well_shift <- ifelse (shifted == 0, "No", "Yes")
 
 wells.data <- cbind (switch, arsenic, dist, assoc, educ, educ4, use, 
                      status_perceived, well_shift)
@@ -127,16 +137,16 @@ wells <- read.table("wells.dat", header = TRUE)
 df <- data.frame(wells) %>%
   mutate(switch = as.factor(switch),
          assoc = as.factor(assoc),
-         educ4 = as.factor(educ4),
-         use = as.factor(use),
-         status_perceived = as.factor(status_perceived),
+         educ4 = factor(educ4, levels = c("0", "1-8", "9-12", "12+")),
+         use = factor(use, levels = c("Unfrequently", "Drinking", "Cooking", "Both", "Neither")),
+         status_perceived = factor(status_perceived, levels = c("Safe", "Unsafe", "Don't Know")),
          well_shift = as.factor(well_shift))
 
 drinkorcook_wells <- wells[wells$use!=0,]
 ## Stopping point
 ```
 
-```{r EDA, fig.width = 8, fig.height = 4}
+```{r EDA, fig.width = 8, fig.height = 4, echo=FALSE}
 ### Continuous Predictors
 # Distances 
 hist(dist, breaks=seq(0,10+max(dist[!is.na(dist)]),10), 
@@ -150,9 +160,12 @@ wells %>%
             median = median(dist), 
             IQR = IQR(dist)) %>%
   kable(digits = 3)
+
 ggplot(data = df, mapping = aes(x = dist, fill = switch)) +
   geom_density(alpha = 0.6) + theme(legend.position = "none") +
-  labs(x  = "Distance (m) to nearest safe well", y = "Density")
+  labs(x  = "Distance (m) to nearest safe well", y = "Density", 
+       title = "Distance to Wells")
+    
 # Arsenic 
 hist(arsenic, breaks=seq(0,1+max(arsenic[!is.na(arsenic)]),0.5), 
      xlab="Arsenic Content (mg/dL)", ylab="Frequency", main="Arsenic Content")
@@ -164,10 +177,12 @@ wells %>%
             median = median(arsenic), 
             IQR = IQR(arsenic)) %>%
   kable(digits = 3)
+
 ggplot(data = df, mapping = aes(x = arsenic, fill = switch)) +
   geom_density(alpha = 0.6) + theme(legend.position = "none") +
-  labs(x  = "Arsenic Content (mg/dL)", y = "Density")
-
+  labs(x  = "Arsenic Content (mg/dL)", y = "Density", 
+       title = "Arsenic Content")
+    
 ### Discrete Predictors
 # Education 
 hist(educ, breaks=seq(0,5+max(educ[!is.na(educ)]),5), xlab="Years of Education",
@@ -182,41 +197,43 @@ wells %>%
   kable(digits = 3)
 ggplot(data = df, mapping = aes(x = educ, fill = switch)) +
   geom_histogram(binwidth = 1) + theme(legend.position = "none") +
-  labs(x  = "Years of Education", y = "Frequency")
+  labs(x  = "Years of Education", y = "Frequency", 
+       title = "Education")
 # Education (Recoded)
 ggplot(data = df, mapping = aes(x = educ4, fill = switch)) +
   geom_bar(position = "stack") + 
-  labs (x = "Years of Education*", y = "Frequency", 
-        caption = "*0 = 0,  1 = 1-8,  2 = 9-12,  3 = 12+")
+  labs (x = "Years of Education", y = "Frequency", 
+       title = "Education (Recoded)")
 
 # Community Association
 ggplot(data = df, mapping = aes(x = assoc, fill = switch)) +
   geom_bar(position = "stack") + 
-  labs (x = "Community Association*", y = "Frequency", 
-        caption = "*0 = No, 1 = Yes")
+  labs (x = "Community Association", y = "Frequency", 
+       title = "Community Association")
 # Use
 ggplot(data = df, mapping = aes(x = use, fill = switch)) +
   geom_bar(position = "stack") + 
-  labs (x = "Well Use*", y = "Frequency", 
-        caption = 
-          "*0 = Neither,  1 = Unfrequently,  2 = Drinking,  3 = Cooking")
+  labs (x = "Well Use", y = "Frequency", 
+       title = "Well Use")
+
 # Perceived Status
 ggplot(data = df, mapping = aes(x = status_perceived, fill = switch)) +
   geom_bar(position = "stack") + 
-  labs (x = "Perceived Status*", y = "Frequency", 
-        caption = "*0 = Unsafe,  1 = Safe,  2 = Don't Know")
+  labs (x = "Perceived Status", y = "Frequency", 
+       title = "Perceived Status")
 
 # Shift
 ggplot(data = df, mapping = aes(x = well_shift, fill = switch)) +
   geom_bar(position = "stack") + 
-  labs (x = "Well Shift (Last 3 Years)*", y = "Frequency", 
-        caption = "*0 = No,  1 = Yes")
+  labs (x = "Well Shift (Last 3 Years)", y = "Frequency", 
+       title = "Well Shift (Last 3 Years)")
 
 ### Response Variable
 ggplot(data = df, mapping = aes(x = switch)) +
   geom_bar(fill = "dark green") + 
-  labs (x = "Well Switch (Response)*", y = "Frequency", 
-        caption = "*0 = No,  1 = Yes")
+  labs (x = "Well Switch*", y = "Frequency",
+        caption = "*0 = No,  1 = Yes",
+        title = "Well Switch (Response)")
 ```
 
 
