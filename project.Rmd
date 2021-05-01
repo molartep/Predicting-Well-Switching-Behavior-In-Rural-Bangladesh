@@ -256,24 +256,35 @@ although there are a lot of 0's, the data is not unbalanced (no cloglog regressi
 
 # Modeling 
 
-It seems more reasonable to rescale distance in 100-meter units for interpretability since the regression coefficient associated with a 1-meter change in distance to the nearest safe well can be misleading, e.g. the coefficient may correspond to the difference between a house located 100 meters away from the nearest safe well and a house located 101 meters away (a negligible difference in practice).
+It seems more reasonable to rescale distance in 100-meter units since the regression coefficient associated with a 1-meter change in distance to the nearest safe well can be misleading. The coefficient could, for instance, correspond to the difference between a house located 100 meters away from the nearest safe well and a house located 101 meters away (a negligible difference in practice).
 
-Before fitting interactions it
-makes sense to mean-center the input variables so that we can more easily interpret the
-coefficients. We do not fully standardize these—that is, we do not scale by their standard
-deviations—because it is convenient to be able to consider known differences on the
-original scales of the data (100-meter distances and arsenic-concentration units).
+Before fitting interactions, it
+makes sense to mean-center the continuous main effects so that we can more easily interpret the coefficients. We do not fully standardize these — that is, we do not scale by their standard deviations — because it is convenient to be able to consider known differences on the original scales of the data (100-meter distances and arsenic-concentration units).
 
-Now, we will provide a more technical description of our modeling framework. We decided to fit the following generalized linear model:
+Now, we will provide a more technical description of our modeling framework. We decided to fit the following generalized linear model: 
 
+Let $Y$ be the binary response variable (`switch`), $\bs x$ be the vector of covariates in the regression model, and $\bs \beta$ be the vector of regression coefficients associated with the covariates.
 
-Finally, we found that placing independent t-distribution priors on the regression coefficients is appropriate when developing data-driven (weakly-informative prior) logistic regression models. Specifically, we decided to use t-distributions with 7 degrees of freedom and a scale of 2.5. These hyperparameters were chosen after considering the null logistic regression model, i.e. intercept-only model. Gellman and colleagues explain that this baseline case (one-half of a success and one-half of a failure for a single Binomial trial with probability $p=\text{logit}^{-1}(\theta)$) has a corresponding likelihood of $\text{e}^{\theta/2} / (1+e^{\theta})$ and further that the density function associated with the t-distribution (with 7 degrees of freedom and scale 2.5) is a reasonable approximation. It is appropriate to use a weakly-informative prior distribution because the objective is to develop a data-driven model with high predictive accuracy (and we did not find any context-specific information which would restrict the prior distribution).
+  - Probability model: $[Y \mid \theta] \sim \text{Bernoulli}(\theta)$
 
+  - Link function: $g(\theta)=\text{logit}(\theta)=\eta$ 
 
+  - Systematic component: $\eta = \bs x^T \bs \beta$
+
+By applying the inverse $\text{logit}$ function to both sides of the link function (which yields $\theta = \text{logit}^{-1}(\eta)$), the sampling model can be written as: 
+
+$$
+Y \mid \bs \beta \sim \text{logit}^{-1}(\bs x^T \bs \beta)
+$$
+We found that placing independent student t-distribution priors on the regression coefficients (for the covariates and intercept term) is appropriate when developing data-driven (weakly-informative prior) logistic regression models. Specifically, we decided to use student t-distributions with 7 degrees of freedom and a scale of 2.5 (prior mean 0). These hyperparameters were chosen after considering the null logistic regression model, i.e. intercept-only model. Gellman and colleagues explain that this baseline case (one-half of a success and one-half of a failure for a single Binomial trial with probability $p=\text{logit}^{-1}(\theta)$) has a corresponding likelihood of $\text{e}^{\theta/2} / (1+e^{\theta})$ and further that the density function associated with the student t-distribution (with 7 degrees of freedom and scale 2.5) is a reasonable approximation. Importantly, this choice of prior distribution assumes that the regression coefficients will be small. However, the coefficients have a non-zero probability of being relatively large. It is appropriate to use this weakly-informative prior distribution because the objective is to develop a data-driven model with high predictive accuracy (and we did not find any context-specific information which would restrict the prior distribution). So, the prior specification is:
+
+$$
+\beta \sim t_{7}
+$$
+Our modeling strategy includes a single round of model selection. We perform backward selection using `looic` (leave-one-out) criterion on the model including the intercept term, main effects, and interaction terms. We considered performing two rounds of model selection - first for the model with only the intercept term and main effects and then for the optimal model from the first stage along with interaction terms. Our EDA identified several potentially significant interaction terms. In the second model selection strategy, some of these terms would be excluded by default since the corresponding main effects would not be included in the optimal model from the first stage of selection. Hence, we proceeded with a single, comprehensive round of backward selection.
 
 - Main effects: dist100, arsenic, educ4, assoc, use, status_perceived, well_shift
 - Interaction terms: arsenic:status_perceived, arsenic:dist, educ4:use, dist100:use, dist100:status_perceived, well_shift:dist100, status_perceived:use, status_perceived:educ4
-
 
 ```{r}
 # Andrew Gelman, Aleks Jakulin, Maria Grazia Pittau and Yu-Sung Su. (2009). “A Weakly Informative Default Prior Distribution For Logistic And Other Regression Models.” The Annals of Applied Statistics 2 (4): 1360--1383. http://www.stat.columbia.edu/~gelman/research/published/priors11.pdf
@@ -284,17 +295,68 @@ wells$dist100 <- wells$dist/100
 wells$dist100 <- scale(wells$dist100, scale = FALSE)
 wells$arsenic <- scale(wells$arsenic, scale = FALSE)
 
-
 seed <- 200
 
-fit.1 <- bayesglm(switch ~ dist, data = wells,
+t <- student_t(df = 7, location = 0, scale = 2.5)
+
+full <- stan_glm(switch ~ dist100 + arsenic + educ4 + assoc + use + status_perceived + well_shift + arsenic*status_perceived + arsenic*dist100 + educ4*use + dist100*use + dist100*status_perceived + well_shift*dist100 + status_perceived*use + status_perceived*educ4, data = wells,
                  family = binomial(link = "logit"), 
-                 prior = normal(0,1), prior_intercept = normal(0,1),
+                 prior = t, prior_intercept = t,
                  seed = seed,
                  refresh = 0)
 
-print(fit.1$stanfit)
+no_dist_m <- stan_glm(switch ~ arsenic + educ4 + assoc + use + status_perceived + well_shift + arsenic*status_perceived + educ4*use + status_perceived*use + status_perceived*educ4, data = wells,
+                 family = binomial(link = "logit"), 
+                 prior = t, prior_intercept = t,
+                 seed = seed,
+                 refresh = 0)
 
+no_arsenic_m <- stan_glm(switch ~ dist100 + educ4 + assoc + use + status_perceived + well_shift + educ4*use + dist100*use + dist100*status_perceived + well_shift*dist100 + status_perceived*use + status_perceived*educ4, data = wells,
+                 family = binomial(link = "logit"), 
+                 prior = t, prior_intercept = t,
+                 seed = seed,
+                 refresh = 0)
+
+no_educ_m <- full <- stan_glm(switch ~ dist100 + arsenic + assoc + use + status_perceived + well_shift + arsenic*status_perceived + arsenic*dist100 + dist100*use + dist100*status_perceived + well_shift*dist100 + status_perceived*use, data = wells,
+                 family = binomial(link = "logit"), 
+                 prior = t, prior_intercept = t,
+                 seed = seed,
+                 refresh = 0)
+
+no_assoc_m <- stan_glm(switch ~ dist100 + arsenic + educ4 + use + status_perceived + well_shift + arsenic*status_perceived + arsenic*dist100 + educ4*use + dist100*use + dist100*status_perceived + well_shift*dist100 + status_perceived*use + status_perceived*educ4, data = wells,
+                 family = binomial(link = "logit"), 
+                 prior = t, prior_intercept = t,
+                 seed = seed,
+                 refresh = 0)
+
+no_use_m <- stan_glm(switch ~ dist100 + arsenic + educ4 + assoc + status_perceived + well_shift + arsenic*status_perceived + arsenic*dist100 + dist100*status_perceived + well_shift*dist100 + status_perceived*educ4, data = wells,
+                 family = binomial(link = "logit"), 
+                 prior = t, prior_intercept = t,
+                 seed = seed,
+                 refresh = 0)
+
+no_status_perceived_m <- stan_glm(switch ~ dist100 + arsenic + educ4 + assoc + use + well_shift + arsenic*dist100 + educ4*use + dist100*use + well_shift*dist100, data = wells,
+                 family = binomial(link = "logit"), 
+                 prior = t, prior_intercept = t,
+                 seed = seed,
+                 refresh = 0)
+
+no_well_shift_m <- stan_glm(switch ~ dist100 + arsenic + educ4 + assoc + use + status_perceived + arsenic*status_perceived + arsenic*dist100 + educ4*use + dist100*use + dist100*status_perceived + status_perceived*use + status_perceived*educ4, data = wells,
+                 family = binomial(link = "logit"), 
+                 prior = t, prior_intercept = t,
+                 seed = seed,
+                 refresh = 0)
+
+print(no_dist_m$stanfit)
+print(no_arsenic_m$stanfit)
+print(no_educ_m$stanfit)
+print(no_use_m$stanfit)
+print(no_assoc_m$stanfit)
+print(no_status_perceived_m$stanfit)
+print(no_well_shift_m$stanfit)
+```
+
+```{r}
 # Redefine distance in 100-meter units and fit the model again
 
 dist100 <- dist/100
