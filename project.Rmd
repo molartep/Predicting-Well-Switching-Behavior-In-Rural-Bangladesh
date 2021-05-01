@@ -36,20 +36,36 @@ library(kableExtra)
 
 ### Introduction
 
-Araihazar, Bangladesh
+Water access and sanitation have been two of the most prominent issues around the world for decades. South Asia, in particular, has been and continues to be among the most severely affected areas. According to UNICEF, "millions have limited access to safe water services" in this region. The challenges associated with water access are among the leading causes of child mortality and morbidity. Moreover, limited access to clean water sources has been linked to undernutrition and declining quality of education for children (UNICEF). In many South Asian nations, the primary source of clean water is tubewells. In Bangladesh, for example, 94.02% of water sources are tubewells$^{1}$ (citation). Unfortunately, many wells used for cooking and drinking (consumption) in Bangladesh and other South Asian countries are contaminated with arsenic. Arsenic is a cumulative poison$^{2} footnote: This refers to the accumulation of a toxic chemical in the human body over a period of time$ that is toxic even in low concentrations. According to one source, arsenic contamination of well sources impacts approximately 100 million South Asians on a daily basis (Gelman, 2007, p. 87). The risks posed by this chemical have been studied extensively, and the World Health Organization (WHO) has issued warnings about potential health consequences: "long-term exposure to arsenic from drinking water and food can cause cancer and skin lesions. It has also been associated with cardiovascular disease and diabetes. In utero and early childhood exposure has been linked to negative impacts on cognitive development and increased deaths in young adults" (citation). Furthermore, we learned that “the rural population of the Bengal Basin will probably continue to rely primarily on tubewells for at least another decade" (Van Geen et al., 2007). This implies that a deeper understanding of the issue is needed and that modeling should focus on predicting the behavior of well users in years to come.
 
-Many of the wells used for drinking water in Bangladesh and other South Asian countries are contaminated with natural arsenic, affecting an estimated 100 million people. Arsenic is a cumulative poison, and exposure increases the risk of cancer and other diseases, with risks estimated to be proportional to exposure.
-Any locality can include wells with a range of arsenic levels, as can be seen from the map in Figure 5.7 of all the wells in a collection of villages in a small area of Bangladesh. The bad news is that even if your neighbor’s well is safe, it does not mean that yours is safe. However, the corresponding good news is that, if your well has a high arsenic level, you can probably find a safe well nearby to get your water from—if you are willing to walk the distance and your neighbor is willing to share. (The amount of water needed for drinking is low enough that adding users to a well would not exhaust its capacity, and the surface water in this area is subject to
-contamination by microbes, hence the desire to use water from deep wells.) In the area shown in Figure 5.7, a research team from the United States and Bangladesh measured all the wells and labeled them with their arsenic level as well as a characterization as “safe” (below 0.5 in units of hundreds of micrograms per liter, the Bangladesh standard for arsenic in drinking water) or “unsafe” (above 0.5). People with unsafe wells were encouraged to switch to nearby private or community wells or to new wells of their own construction. A few years later, the researchers returned to find out who had switched wells. We shall perform a logistic regression analysis to understand the factors predictive
-of well switching among the users of unsafe wells. In the notation of the previous section, our outcome variable is
+Our analysis is based on a reduced version of the `all` dataset consisting of 6510 observations and 57 variables. Each observation captures characteristics about a household in Araihazar Upazila of Narayanganj District in the Division of Dhaka, Bangladesh. The complete dataset is available on Professor Gelman's (affiliated with Columbia University) website and was last modified in December 2004 (http://www.stat.columbia.edu/~gelman/arm/examples/arsenic/). The data was collected by a research team from the United States and Bangladesh that measured the arsenic concentrations in each well and surveyed households according to a pre-designed questionnaire. It is important to note that the study was not completely objective since “people with unsafe wells were encouraged to switch to nearby private or community wells or to new wells of their own construction" (Gelman, 2007, p. 87). For context, the definition of "unsafe" wells used in that analysis (as well as our own) was based on the Bangladesh standard for arsenic in drinking water, which is below $50\space\mu g/L$ rather than the stricter WHO standard (below $10\space\mu g/L$).
 
-yi = 1 if household i switched to a new well
-yi = 0 if household i continued using its own well
+Another critical observation is that "safe and unsafe wells are intermingled in much of the Araihazar Upazila (at least in rural areas). This suggests that users of unsafe wells have the option to switch to nearby safe wells (Gelman, 2007, p. 87). Based on this realization, we can discard modeling options on the basis of spatial locality, like clustering. Since safe and unsafe wells appear to be located in close proximity to each other (intermingled), it would be effectively impossible to partition the area into subregions with only safe or unsafe wells (but not both). It is important to note that the observation regarding the relative positions of safe and unsafe wells is not true in general. In fact, families may not be able to switch wells for a number of reasons - including ones unrelated to the distance to the nearest safe well. In Araihazar Upazila - the region of interest - well ‘switching’ is a feasible alternative given that every household has a safe well nearby, well capacity is large enough for additional users, and other options, like surface water, are subject to contamination by microbes (Gelman, 2007, p. 87). Other studies on water quality have concentrated on similar South Asian regions (Cha et al., 2016), but they primarily focus on estimating the arsenic contamination from other water quality parameters. In this analysis, we use arsenic concentration along with socioeconomic variables of households to predict if a given household will switch from an unsafe well to a safe well.
 
-We consider the following inputs:
+Accordingly, our response variable is `switch` - a binary value that indicates whether the user of an unsafe well in an area of Araihazar Upazila, Bangladesh switched to a different well. If `switch` takes a value of 1, it indicates that the household switched to a new well; conversely, if `switch` takes a value of 0, the household continued using the current well. The remaining 56 variables are all predictor variables, which contain information about the household and wells in the area. For the purpose of this analysis, we only considered 7 relevant predictors from the available 56 and recoded some of them to remove some inconsistencies and redundancies, while improving interpretability.
 
-We shall first fit the model just using distance to nearest well and then put in
-arsenic concentration, organizational membership, and education.
+
+Only two of the relevant predictors are continuous:
+
+- `dist` indicates the distance (in meters) to the closest known safe well.
+
+- `arsenic` indicates the arsenic concentration (in micrograms per Liter) of a household's well.
+
+The remaining predictors used are discrete:
+
+- `educ` indicates the education level of the head of the household in years of education completed.
+
+- `educ4` indicates the education level of the head of the household as a categorical variable with 4 levels: 0, 1-8, 9-12, or 12+ years of education completed.
+
+- `assoc` indicates if any member of the household is active in community organizations. Originally the survey options had more levels to specify the type of organization ([0] no, [1] informal savings/micro-credit, [2] bazaar samiti, [3] other), but the discrepancy between no association and any association was more significant.
+
+- `use` indicates how the household used the well. The survey asked if they used the well for drinking or cooking, but "sometimes" was also an option. Thus, it seemed logical to group the responses into 5 levels: Unfrequently, Drinking, Cooking, or Both.
+
+- `status_perceived` indicates how the user perceived the status or condition of the well (Unsafe, Safe, or Don't Know). 
+
+- `well_shift` indicates if the household had shifted to a different well in the past 3 years before the survey was conducted.
+
+We shall first fit the model just using distance to nearest well and then put in arsenic concentration, organizational membership, and education.
 
 
 
@@ -162,7 +178,7 @@ ggplot(data = df, mapping = aes(x = dist, fill = switch)) +
     
 # Arsenic 
 hist(arsenic, breaks=seq(0,100+max(arsenic[!is.na(arsenic)]),50), 
-     xlab="Arsenic Content (micrograms per liter)", ylab="Frequency", main="Arsenic Content")
+     xlab="Arsenic Content (micrograms per Liter)", ylab="Frequency", main="Arsenic Content")
 wells %>%
   summarise(min = min(arsenic),
             max = max(arsenic),
@@ -174,7 +190,7 @@ wells %>%
 
 ggplot(data = df, mapping = aes(x = arsenic, fill = switch)) +
   geom_density(alpha = 0.6) +
-  labs(x  = "Arsenic Content (micrograms per liter)", y = "Density", 
+  labs(x  = "Arsenic Content (micrograms per Liter)", y = "Density", 
        title = "Arsenic Content")
     
 ### Discrete Predictors
@@ -228,9 +244,30 @@ ggplot(data = df, mapping = aes(x = switch)) +
   labs (x = "Well Switch*", y = "Frequency",
         caption = "*0 = No,  1 = Yes",
         title = "Well Switch (Response)")
+
+
+### Interactions
+
+ggplot(data = df, mapping = aes(x = dist, fill = use)) +
+  geom_density(alpha = 0.3) + labs(x  = "Distance (m) to nearest safe well", y = "Density", 
+       title = "Distance to Wells vs Well Use")
+ggplot(data = df, mapping = aes(x = dist, fill = status_perceived)) +
+  geom_density(alpha = 0.6) + labs(x  = "Distance (m) to nearest safe well", y = "Density", 
+       title = "Distance to Wells vs Perceived Status")
+ggplot(data = df, mapping = aes(x = dist, fill = well_shift)) +
+  geom_density(alpha = 0.6) + labs(x  = "Distance (m) to nearest safe well", y = "Density", 
+       title = "Distance to Wells vs Well Shift")
+
+ggplot(data = df, mapping = aes(x = arsenic, fill = use)) +
+  geom_density(alpha = 0.6) + labs(x  = "Arsenic Content (micrograms per Liter)", y = "Density", 
+       title = "Arsenic Content vs Well Use")
+
+ggplot(data = df, mapping = aes(x = arsenic, y = dist)) +
+  geom_point() + labs(x  = "Arsenic Content (micrograms per Liter)", y = "Distance (m) to nearest safe well", 
+       title = "Arsenic Content vs Distance to Wells")
 ```
 
-- arsenic concentration: all > 50 based on structure of problem; max: 965 micrograms per liter which is almost 20x the safe concentration threshold (justifies why this is even an issue that needs to be urgently addressed); seems that arsenic content is less of a significant predictor than perceived well status and distance to nearest safe well (interaction with perceived well status could be relevant as perhaps households decide whether to switch based on a combination of perceptions and science; interaction with distance: wells that are far from the nearest safe well are also likely to be particularly high in arsenic)
+- arsenic concentration: all > 50 based on structure of problem; max: 965 micrograms per Liter which is almost 20x the safe concentration threshold (justifies why this is even an issue that needs to be urgently addressed); seems that arsenic content is less of a significant predictor than perceived well status and distance to nearest safe well (interaction with perceived well status could be relevant as perhaps households decide whether to switch based on a combination of perceptions and science; interaction with distance: wells that are far from the nearest safe well are also likely to be particularly high in arsenic)
 
 - community association vs. switch: the relative proportions of switch/no switch seem consistent regardless of community association; evidence in the data suggests community association is insignificant (still include in initial model before model selection to confirm our EDA observations are supported)
 
@@ -286,74 +323,127 @@ Our modeling strategy includes a single round of model selection. We perform bac
 - Main effects: dist100, arsenic, educ4, assoc, use, status_perceived, well_shift
 - Interaction terms: arsenic:status_perceived, arsenic:dist, educ4:use, dist100:use, dist100:status_perceived, well_shift:dist100, status_perceived:use, status_perceived:educ4
 
-```{r}
+```{r, echo=FALSE}
+
 # Andrew Gelman, Aleks Jakulin, Maria Grazia Pittau and Yu-Sung Su. (2009). “A Weakly Informative Default Prior Distribution For Logistic And Other Regression Models.” The Annals of Applied Statistics 2 (4): 1360--1383. http://www.stat.columbia.edu/~gelman/research/published/priors11.pdf
 
 # Scaling & Centering
 wells$dist100 <- wells$dist/100
+wells$as100 <- wells$arsenic/100
 
 wells$dist100 <- scale(wells$dist100, scale = FALSE)
-wells$arsenic <- scale(wells$arsenic, scale = FALSE)
+wells$as100 <- scale(wells$as100, scale = FALSE)
+
 
 seed <- 200
 
 t <- student_t(df = 7, location = 0, scale = 2.5)
 
-full <- stan_glm(switch ~ dist100 + arsenic + educ4 + assoc + use + status_perceived + well_shift + arsenic*status_perceived + arsenic*dist100 + educ4*use + dist100*use + dist100*status_perceived + well_shift*dist100 + status_perceived*use + status_perceived*educ4, data = wells,
+main_effects1 <- stan_glm(switch ~ dist100 + as100 + educ4 + assoc + use + status_perceived + well_shift, data = wells,
                  family = binomial(link = "logit"), 
                  prior = t, prior_intercept = t,
                  seed = seed,
                  refresh = 0)
+(loo_main1 <- loo(main_effects1, save_psis = TRUE))
 
-no_dist_m <- stan_glm(switch ~ arsenic + educ4 + assoc + use + status_perceived + well_shift + arsenic*status_perceived + educ4*use + status_perceived*use + status_perceived*educ4, data = wells,
+no_educ1 <- stan_glm(switch ~ dist100 + as100 + assoc + use + status_perceived + well_shift, data = wells,
                  family = binomial(link = "logit"), 
                  prior = t, prior_intercept = t,
                  seed = seed,
                  refresh = 0)
+(loo_no_educ1 <- loo(no_educ1, save_psis = TRUE))
 
-no_arsenic_m <- stan_glm(switch ~ dist100 + educ4 + assoc + use + status_perceived + well_shift + educ4*use + dist100*use + dist100*status_perceived + well_shift*dist100 + status_perceived*use + status_perceived*educ4, data = wells,
+no_arsenic_m <- stan_glm(switch ~ dist100 + educ4 + assoc + use + status_perceived + well_shift, data = wells,
                  family = binomial(link = "logit"), 
                  prior = t, prior_intercept = t,
                  seed = seed,
                  refresh = 0)
+(loo_no_arsenic <- loo(no_arsenic_m, save_psis = TRUE))
 
-no_educ_m <- full <- stan_glm(switch ~ dist100 + arsenic + assoc + use + status_perceived + well_shift + arsenic*status_perceived + arsenic*dist100 + dist100*use + dist100*status_perceived + well_shift*dist100 + status_perceived*use, data = wells,
+no_assoc_m <- stan_glm(switch ~ dist100 + arsenic + educ4 + use + status_perceived + well_shift, data = wells,
                  family = binomial(link = "logit"), 
                  prior = t, prior_intercept = t,
                  seed = seed,
                  refresh = 0)
+(loo_no_assoc <- loo(no_assoc_m, save_psis = TRUE))
 
-no_assoc_m <- stan_glm(switch ~ dist100 + arsenic + educ4 + use + status_perceived + well_shift + arsenic*status_perceived + arsenic*dist100 + educ4*use + dist100*use + dist100*status_perceived + well_shift*dist100 + status_perceived*use + status_perceived*educ4, data = wells,
+no_use_m <- stan_glm(switch ~ dist100 + arsenic + educ4 + assoc + status_perceived + well_shift, data = wells,
                  family = binomial(link = "logit"), 
                  prior = t, prior_intercept = t,
                  seed = seed,
                  refresh = 0)
+(loo_no_use <- loo(no_use_m, save_psis = TRUE))
 
-no_use_m <- stan_glm(switch ~ dist100 + arsenic + educ4 + assoc + status_perceived + well_shift + arsenic*status_perceived + arsenic*dist100 + dist100*status_perceived + well_shift*dist100 + status_perceived*educ4, data = wells,
+no_status_perceived_m <- stan_glm(switch ~ dist100 + arsenic + educ4 + assoc + use + well_shift, data = wells,
                  family = binomial(link = "logit"), 
                  prior = t, prior_intercept = t,
                  seed = seed,
                  refresh = 0)
+(loo_no_status <- loo(no_status_perceived_m, save_psis = TRUE))
 
-no_status_perceived_m <- stan_glm(switch ~ dist100 + arsenic + educ4 + assoc + use + well_shift + arsenic*dist100 + educ4*use + dist100*use + well_shift*dist100, data = wells,
+no_well_shift_m <- stan_glm(switch ~ dist100 + arsenic + educ4 + assoc + use + status_perceived, data = wells,
                  family = binomial(link = "logit"), 
                  prior = t, prior_intercept = t,
                  seed = seed,
                  refresh = 0)
+(loo_no_shift <- loo(no_well_shift_m, save_psis = TRUE))
 
-no_well_shift_m <- stan_glm(switch ~ dist100 + arsenic + educ4 + assoc + use + status_perceived + arsenic*status_perceived + arsenic*dist100 + educ4*use + dist100*use + dist100*status_perceived + status_perceived*use + status_perceived*educ4, data = wells,
+loo_compare(loo_main1, loo_no_educ1, loo_no_arsenic, loo_no_assoc, loo_no_use, loo_no_status, loo_no_shift)
+
+############################### FIRST STEP
+
+no_educ_dist <- stan_glm(switch ~ as100 + assoc + use + status_perceived + well_shift, data = wells,
                  family = binomial(link = "logit"), 
                  prior = t, prior_intercept = t,
                  seed = seed,
                  refresh = 0)
+(loo_no_educ_dist <- loo(no_educ_dist, save_psis = TRUE))
 
-print(no_dist_m$stanfit)
-print(no_arsenic_m$stanfit)
-print(no_educ_m$stanfit)
-print(no_use_m$stanfit)
-print(no_assoc_m$stanfit)
-print(no_status_perceived_m$stanfit)
-print(no_well_shift_m$stanfit)
+no_educ_as <- stan_glm(switch ~ dist100 + assoc + use + status_perceived + well_shift, data = wells,
+                 family = binomial(link = "logit"), 
+                 prior = t, prior_intercept = t,
+                 seed = seed,
+                 refresh = 0)
+(loo_no_educ_as <- loo(no_educ_as, save_psis = TRUE))
+
+no_educ_assoc <- stan_glm(switch ~ dist100 + as100 + use + status_perceived + well_shift, data = wells,
+                 family = binomial(link = "logit"), 
+                 prior = t, prior_intercept = t,
+                 seed = seed,
+                 refresh = 0)
+(loo_no_educ_assoc <- loo(no_educ_assoc, save_psis = TRUE))
+
+no_educ_use <- stan_glm(switch ~ dist100 + as100 + assoc + status_perceived + well_shift, data = wells,
+                 family = binomial(link = "logit"), 
+                 prior = t, prior_intercept = t,
+                 seed = seed,
+                 refresh = 0)
+(loo_no_educ_use <- loo(no_educ_use, save_psis = TRUE))
+
+no_educ_status <- stan_glm(switch ~ dist100 + as100 + assoc + use + well_shift, data = wells,
+                 family = binomial(link = "logit"), 
+                 prior = t, prior_intercept = t,
+                 seed = seed,
+                 refresh = 0)
+(loo_no_educ_status <- loo(no_educ_status, save_psis = TRUE))
+
+no_educ_shift <- stan_glm(switch ~ dist100 + as100 + assoc + use + status_perceived, data = wells,
+                 family = binomial(link = "logit"), 
+                 prior = t, prior_intercept = t,
+                 seed = seed,
+                 refresh = 0)
+(loo_no_educ_shift <- loo(no_educ_shift, save_psis = TRUE))
+
+loo_compare(loo_no_educ1, loo_no_educ_dist, loo_no_educ_as, loo_no_educ_assoc, loo_no_educ_use, loo_no_educ_status, loo_no_educ_shift)
+
+
+################# SECOND STEP
+no_educ_interac <- stan_glm(switch ~ dist100 + as100 + assoc + use + status_perceived + well_shift, data = wells,
+                 family = binomial(link = "logit"), 
+                 prior = t, prior_intercept = t,
+                 seed = seed,
+                 refresh = 0)
+(loo_no_educ_interac <- loo(no_educ_interac, save_psis = TRUE))
 ```
 
 ```{r}
