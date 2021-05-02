@@ -486,7 +486,33 @@ ploo=E_loo(preds, loo_no_educ_interac_noassta$psis_object, type="mean", log_rati
 round(mean(xor(ploo>0.5,as.integer(wells$switch==0))),3)
 
 #ploo = 0.658 no education, no distance*shift interaction
+```
 
+```{r diagnostics}
+#dist
+matrix <- as.matrix(no_educ_interac)
+trace.dist <- plot(matrix[,2], type="l")
+acf.dist <- acf(matrix[,2])
+#dist
+matrix <- as.matrix(no_educ_interac)
+trace.dist <- plot(matrix[,3], type="l")
+acf.dist <- acf(matrix[,3])
+#dist
+matrix <- as.matrix(no_educ_interac)
+trace.dist <- plot(matrix[,4], type="l")
+acf.dist <- acf(matrix[,4])
+#dist
+matrix <- as.matrix(no_educ_interac)
+trace.dist <- plot(matrix[,5], type="l")
+acf.dist <- acf(matrix[,5])
+#dist
+matrix <- as.matrix(no_educ_interac)
+trace.dist <- plot(matrix[,6], type="l")
+acf.dist <- acf(matrix[,6])
+#dist
+matrix <- as.matrix(no_educ_interac)
+trace.dist <- plot(matrix[,7], type="l")
+acf.dist <- acf(matrix[,7])
 ```
 
 ```{r}
