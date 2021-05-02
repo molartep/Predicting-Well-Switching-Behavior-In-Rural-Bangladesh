@@ -186,7 +186,7 @@ The univariate distribution of distances confirms our initial suspicions about t
 
 Based on the plot of well shift in the last 3 years and the response (Figure 1), there is evidence in the data suggesting that this covariate should be significant in the logistic regression model; note that all of the households which shifted to a different well in the past three years, expected to switch once more when informed about the unsafe well.
 
-Similarly, based on the plot of perceived well status and the response (Figure 1), there is evidence in the data suggesting that this covariate should be significant in the logistic regression model (there are seemingly significant differences, at least visually, among levels of predictor); note that a significant proportion of households who believed the well to be unsafe, still chose not to switch.
+Similarly, based on the plot of perceived well status and the response (Figure 1), there is evidence in the data suggesting that this covariate should be significant in the logistic regression model (there are seemingly significant differences, at least visually, among levels of the predictor); note that a significant proportion of households who believed the well to be unsafe still chose not to switch.
 
 ### Modeling 
 
@@ -212,10 +212,11 @@ We found that placing independent student t-distribution priors on the regressio
 $$
 \beta \sim t_{7}
 $$
-Our model selection scheme involves two rounds of backward selection using the `looic` (leave-one-out) criterion: first for the model with only the intercept term and main effects and then for the optimal model from the first stage along with interaction terms. After our first stage of model selection, we noticed that, based on the output of the `loo_compare()` function (which assesses the predictive accuracy of each model), the model excluding `educ4` (but with all other main effects and the intercept) was preferred. Continuing on to the second stage, we added interaction terms to the logistic regression model. Our EDA coupled with our intuition and research informed our choice of interaction terms (see EDA). Specifically, the interaction terms we consider are: `arsenic:status_perceived`, `arsenic:dist100`, `dist100:use`, `dist100:status_perceived`, and `well_shift:dist100`. Note that the potential interaction terms (`educ4:use` and `status_perceived:educ4`) including the covariate `educ4` are excluded by default since `educ4` was eliminated from the logistic regression model during the first stage of model selection. In an ideal setting, we would have constructed our model using these interaction terms; however, the computational cost associated with adding extra interaction terms was so excessive that we decided to revert to an earlier version of the model that omitted `dist100:use` and `dist100:status_perceived`. During the second stage of backward selection using `looic` as the criterion, we noticed that the ELDP_diff for each of the candidate models was small in magnitude, considering the size of its standard error. For this reason, we decided to use our posterior predictive checks as the final step in our model selection scheme. Specifically, we computed the classification accuracy for each of the candidate models (intercept + main effects + all but one interaction). Comparing these values, we confirmed our suspicion that each of the candidate models had relatively similar predictive capabilities. The range of classification accuracies was [0.655, 0.66]. 
+
+Our model selection scheme involves two rounds of backward selection using the `looic` (leave-one-out) criterion: first for the model with only the intercept term and main effects and then for the optimal model from the first stage along with interaction terms. After our first stage of model selection (see Appendix C), we noticed that, based on the output of the `loo_compare()` function (which assesses the predictive accuracy of each model), the model excluding `educ4` (but with all other main effects and the intercept) was preferred. Continuing on to the second stage, we added interaction terms to the logistic regression model. Our EDA coupled with our intuition and research informed our choice of interaction terms (see EDA). Specifically, the interaction terms we consider are: `arsenic:status_perceived`, `arsenic:dist100`, `dist100:use`, `dist100:status_perceived`, and `well_shift:dist100`. Note that the potential interaction terms (`educ4:use` and `status_perceived:educ4`) including the covariate `educ4` are excluded by default since `educ4` was eliminated from the logistic regression model during the first stage of model selection. In an ideal setting, we would have constructed our model using these interaction terms; however, the computational cost associated with adding extra interaction terms was so excessive that we decided to revert to an earlier version of the model that omitted `dist100:use` and `dist100:status_perceived`. During the second stage of backward selection using `looic` as the criterion (see Appendix C), we noticed that the ELDP_diff for each of the candidate models was small in magnitude, considering the size of its standard error (the ELDP_diff was smaller in magnitude than the associated standard error). For this reason, we decided to use our posterior predictive checks as the final step in our model selection scheme. Specifically, we computed the classification accuracy for each of the candidate models (intercept + main effects + all but one interaction). Comparing these values, we confirmed our suspicion that each of the candidate models had relatively similar predictive capabilities. The range of classification accuracies was [0.655, 0.66]. 
 
 
-```{r, echo=FALSE, cache=TRUE}
+```{r, echo=FALSE, cache=TRUE, message=FALSE, results='hide'}
 
 # Andrew Gelman, Aleks Jakulin, Maria Grazia Pittau and Yu-Sung Su. (2009). “A Weakly Informative Default Prior Distribution For Logistic And Other Regression Models.” The Annals of Applied Statistics 2 (4): 1360--1383. http://www.stat.columbia.edu/~gelman/research/published/priors11.pdf
 
@@ -280,7 +281,7 @@ no_well_shift_m <- stan_glm(switch ~ dist100 + arsenic + educ4 + assoc + use + s
                  refresh = 0)
 (loo_no_shift <- loo(no_well_shift_m, save_psis = TRUE))
 
-loo_compare(loo_main1, loo_no_educ1, loo_no_arsenic, loo_no_assoc, loo_no_use, loo_no_status, loo_no_shift)
+rm_educ_loo <- loo_compare(loo_main1, loo_no_educ1, loo_no_arsenic, loo_no_assoc, loo_no_use, loo_no_status, loo_no_shift)
 
 ############################### FIRST STEP
 
@@ -326,7 +327,7 @@ no_educ_shift <- stan_glm(switch ~ dist100 + as100 + assoc + use + status_percei
                  refresh = 0)
 (loo_no_educ_shift <- loo(no_educ_shift, save_psis = TRUE))
 
-loo_compare(loo_no_educ1, loo_no_educ_dist, loo_no_educ_as, loo_no_educ_assoc, loo_no_educ_use, loo_no_educ_status, loo_no_educ_shift)
+rm_first_step <- loo_compare(loo_no_educ1, loo_no_educ_dist, loo_no_educ_as, loo_no_educ_assoc, loo_no_educ_use, loo_no_educ_status, loo_no_educ_shift)
 
 
 ################# SECOND STEP
@@ -358,21 +359,19 @@ no_educ_interac_nodistshift <- stan_glm(switch ~ dist100 + arsenic + assoc + sta
                  refresh = 0)
 (loo_no_educ_interac_nodistshift <- loo(no_educ_interac_nodistshift, save_psis = TRUE))
 
-loo_compare(loo_no_educ_interac, loo_no_educ_interac_noassta, loo_no_educ_interac_noasdist, loo_no_educ_interac_nodistshift)
+rm_second_step <- loo_compare(loo_no_educ_interac, loo_no_educ_interac_noassta, loo_no_educ_interac_noasdist, loo_no_educ_interac_nodistshift)
 
 preds <- posterior_epred(no_educ_interac)
 pred <- colMeans(preds)
-pr <- as.integer(pred >= 0.5)
-
 ploo=E_loo(preds, loo_no_educ_interac_noassta$psis_object, type="mean", log_ratios = -log_lik(no_educ_interac))$value
-round(mean(xor(ploo>0.5,as.integer(wells$switch==0))),3)
+no_educ_interac_accuracy <- round(mean(xor(ploo>0.5,as.integer(wells$switch==0))),3)
 
 #ploo = 0.66 no education, all interactions
 
 preds <- posterior_epred(no_educ_interac_noassta)
 pred <- colMeans(preds)
 ploo=E_loo(preds, loo_no_educ_interac_noassta$psis_object, type="mean", log_ratios = -log_lik(no_educ_interac_noassta))$value
-round(mean(xor(ploo>0.5,as.integer(wells$switch==0))),3)
+no_educ_interac_noassta_accuracy <- round(mean(xor(ploo>0.5,as.integer(wells$switch==0))),3)
 
 #ploo = 0.655 no education, no arsenic*status interaction
 
@@ -383,7 +382,7 @@ pred <- colMeans(preds)
 pr <- as.integer(pred >= 0.5)
 
 ploo=E_loo(preds, loo_no_educ_interac_noassta$psis_object, type="mean", log_ratios = -log_lik(no_educ_interac_noasdist))$value
-round(mean(xor(ploo>0.5,as.integer(wells$switch==0))),3)
+no_educ_interac_noasdist_accuracy <- round(mean(xor(ploo>0.5,as.integer(wells$switch==0))),3)
 
 #ploo = 0.658 no education, no arsenic*distance
 
@@ -393,7 +392,7 @@ pred <- colMeans(preds)
 pr <- as.integer(pred >= 0.5)
 
 ploo=E_loo(preds, loo_no_educ_interac_noassta$psis_object, type="mean", log_ratios = -log_lik(no_educ_interac_nodistshift))$value
-round(mean(xor(ploo>0.5,as.integer(wells$switch==0))),3)
+no_educ_interac_nodistshift_accuracy <- round(mean(xor(ploo>0.5,as.integer(wells$switch==0))),3)
 
 #ploo = 0.658 no education, no distance*shift interaction
 
@@ -406,7 +405,7 @@ The posterior regression coefficients are given in the following table:
 
 ```{r, echo=FALSE}
 data.frame(Coefficient = round(coef(no_educ_interac), 3),
-           Interval = round(posterior_interval(no_educ_interac, prob = 0.95), 3)) %>%
+           CI = round(posterior_interval(no_educ_interac, prob = 0.95), 3)) %>%
   kable()
 ```
 
@@ -526,3 +525,14 @@ trace.dist <- plot(matrix[,8], type="l")
 acf.dist <- acf(matrix[,8])
 ```
 
+### Appendix C
+
+Here we have displayed the output from the `loo_compare()` function at each stage of the model selection scheme.
+
+\vspace{10mm}
+
+```{r loo, echo=FALSE, fig.height=4, fig.width=6.5}
+rm_educ_loo
+rm_first_step
+rm_second_step
+```
