@@ -9,7 +9,7 @@ fig_width: 6.5
 fig_height: 4
 df_print: kable
 output: pdf_document
-fontsize: 12pt
+fontsize: 10pt
 mainfont: Times New Roman
 sansfont: Times New Roman
 monofont: Times New Roman
@@ -33,24 +33,23 @@ library(foreign)
 library(R2OpenBUGS)
 library(arm)
 library(kableExtra)
+library(gridExtra)
 ```
 
 ### Introduction
 
-Water access and sanitation have been two of the most prominent issues around the world for decades. South Asia, in particular, has been and continues to be among the most severely affected areas. According to UNICEF, "millions have limited access to safe water services" in this region. The challenges associated with water access are among the leading causes of child mortality and morbidity. Moreover, limited access to clean water sources has been linked to undernutrition and declining quality of education for children (UNICEF). In many South Asian nations, the primary source of clean water is tubewells. In Bangladesh, for example, 94.02% of water sources are tubewells$^{1}$ (citation). Unfortunately, many wells used for cooking and drinking (consumption) in Bangladesh and other South Asian countries are contaminated with arsenic. Arsenic is a cumulative poison$^{2} footnote: This refers to the accumulation of a toxic chemical in the human body over a period of time$ that is toxic even in low concentrations. According to one source, arsenic contamination of well sources impacts approximately 100 million South Asians on a daily basis (Gelman, 2007, p. 87). The risks posed by this chemical have been studied extensively, and the World Health Organization (WHO) has issued warnings about potential health consequences: "long-term exposure to arsenic from drinking water and food can cause cancer and skin lesions. It has also been associated with cardiovascular disease and diabetes. In utero and early childhood exposure has been linked to negative impacts on cognitive development and increased deaths in young adults" (citation). Furthermore, we learned that “the rural population of the Bengal Basin will probably continue to rely primarily on tubewells for at least another decade" (Van Geen et al., 2007). This implies that a deeper understanding of the issue is needed and that modeling should focus on predicting the behavior of well users in years to come.
+Water access and sanitation have been two of the most prominent issues around the world for decades. South Asia, in particular, has been and continues to be among the most severely affected areas. According to UNICEF, "millions have limited access to safe water services" in this region. The challenges associated with water access are among the leading causes of child mortality and morbidity (*Water, sanitation and hygiene*). Moreover, limited access to clean water sources has been linked to undernutrition and declining quality of education for children (*Water, sanitation and hygiene*). In many South Asian nations, the primary source of clean water is tubewells. In Bangladesh, for example, 94.02% of water sources are tubewells (*Araihazar Upazila*). Unfortunately, many wells used for cooking and drinking (consumption) in Bangladesh and other South Asian countries are contaminated with arsenic. Arsenic is a cumulative poison (the accumulation of a toxic chemical in the human body over a period of time) that is toxic even in low concentrations. According to one source, arsenic contamination of well sources impacts approximately 100 million South Asians on a daily basis (Gelman, 2007, p. 87). The risks posed by this chemical have been studied extensively, and the World Health Organization (WHO) has issued warnings about potential health consequences: "long-term exposure to arsenic from drinking water and food can cause cancer and skin lesions. It has also been associated with cardiovascular disease and diabetes. In utero and early childhood exposure has been linked to negative impacts on cognitive development and increased deaths in young adults" (*Arsenic*).
 
-Our analysis is based on a reduced version of the `all` dataset consisting of 6510 observations and 57 variables. Each observation captures characteristics about a household in Araihazar Upazila of Narayanganj District in the Division of Dhaka, Bangladesh. The complete dataset is available on Professor Gelman's (affiliated with Columbia University) website and was last modified in December 2004 (http://www.stat.columbia.edu/~gelman/arm/examples/arsenic/). The data was collected by a research team from the United States and Bangladesh that measured the arsenic concentrations in each well and surveyed households according to a pre-designed questionnaire. It is important to note that the study was not completely objective since “people with unsafe wells were encouraged to switch to nearby private or community wells or to new wells of their own construction" (Gelman, 2007, p. 87). For context, the definition of "unsafe" wells used in that analysis (as well as our own) was based on the Bangladesh standard for arsenic in drinking water, which is below $50\space\mu g/L$ rather than the stricter WHO standard (below $10\space\mu g/L$).
+Our analysis is based on a reduced version of the `all` dataset consisting of 6510 observations and 57 variables. Each observation captures characteristics about a household in Araihazar Upazila of Narayanganj District in the Division of Dhaka, Bangladesh. The complete dataset is available on Professor Gelman's (affiliated with Columbia University) website and was last modified in December 2004 (*Index of /~gelman/arm/examples/arsenic*). The data was collected by a research team from the United States and Bangladesh that measured the arsenic concentrations in each well and surveyed households according to a pre-designed questionnaire. It is important to note that the study was not completely objective since “people with unsafe wells were encouraged to switch to nearby private or community wells or to new wells of their own construction" (Gelman, 2007, p. 87). For context, the definition of "unsafe" wells used in that analysis (as well as our own) was based on the Bangladesh standard for arsenic in drinking water, which is below $50\space\mu g/L$ rather than the stricter WHO standard (below $10\space\mu g/L$). 
 
-Another critical observation is that "safe and unsafe wells are intermingled in much of the Araihazar Upazila (at least in rural areas). This suggests that users of unsafe wells have the option to switch to nearby safe wells (Gelman, 2007, p. 87). Based on this realization, we can discard modeling options on the basis of spatial locality, like clustering. Since safe and unsafe wells appear to be located in close proximity to each other (intermingled), it would be effectively impossible to partition the area into subregions with only safe or unsafe wells (but not both). It is important to note that the observation regarding the relative positions of safe and unsafe wells is not true in general. In fact, families may not be able to switch wells for a number of reasons - including ones unrelated to the distance to the nearest safe well. In Araihazar Upazila - the region of interest - well ‘switching’ is a feasible alternative given that every household has a safe well nearby, well capacity is large enough for additional users, and other options, like surface water, are subject to contamination by microbes (Gelman, 2007, p. 87). Other studies on water quality have concentrated on similar South Asian regions (Cha et al., 2016), but they primarily focus on estimating the arsenic contamination from other water quality parameters. In this analysis, we use arsenic concentration along with socioeconomic variables of households to predict if a given household will switch from an unsafe well to a safe well.
+Another critical observation is that "safe and unsafe wells are intermingled in much of the Araihazar Upazila (at least in rural areas). This suggests that users of unsafe wells have the option to switch to nearby safe wells (Gelman, 2007, p. 87). Based on this realization, we can discard modeling options on the basis of spatial locality, like clustering. Since safe and unsafe wells appear to be located in close proximity to each other (intermingled), it would be effectively impossible to partition the area into subregions with only safe or unsafe wells (but not both). It is important to note that the observation regarding the relative positions of safe and unsafe wells is not true in general. In fact, families may not be able to switch wells for a number of reasons $-$ including ones unrelated to the distance to the nearest safe well. In Araihazar Upazila $-$ the region of interest $-$ well ‘switching’ is a feasible alternative given that every household has a safe well nearby, well capacity is large enough for additional users, and other options, like surface water, are subject to contamination by microbes (Gelman, 2007, p. 87). Other studies on water quality have concentrated on similar South Asian regions (Cha et al., 2016), but they primarily focus on estimating the arsenic contamination from other water quality parameters. In this analysis, we use arsenic concentration along with socioeconomic variables of households to predict if a given household will switch from an unsafe well to a safe well. The main purpose of this statistical analysis is to maximize predictive accuracy with the main goal of determining future policies for this specific area in Bangladesh. The motivation behind this ambitious goal is that “the rural population of the Bengal Basin will probably continue to rely primarily on tubewells for at least another decade" (Van Geen et al., 2007). This implies that a deeper understanding of the issue is needed and that modeling should focus on predicting the behavior of well users in years to come. In particular, we hope representatives from government welfare agencies in Araihazar Upazila can use the results of our model to identify which types of households are unlikely to switch to a safe well and target those specific users with tailored campaigns or incentives. However, since we have a relatively small dataset and there does not seem to be more publicly available data about the well-switching preferences of households in Araihazar, the predictive capabilities of our final model may not be useful to these agencies. Fundamentally, the problem is that, before our model can be used to identify which types of households are unlikely to switch to a safe well, research teams must consult with villagers and learn about their current beliefs. The model was fitted based on data collected about 15 years ago, so its relevancy to the preferences of the modern well-user is questionable.  
 
-Accordingly, our response variable is `switch` - a binary value that indicates whether the user of an unsafe well in an area of Araihazar Upazila, Bangladesh switched to a different well. If `switch` takes a value of 1, it indicates that the household switched to a new well; conversely, if `switch` takes a value of 0, the household continued using the current well. The remaining 56 variables are all covariate variables, which contain information about the household and wells in the area. For the purpose of this analysis, we only considered 7 relevant covariates from the available 56 and recoded some of them to remove some inconsistencies and redundancies, while improving interpretability.
+Accordingly, our response variable is `switch` $-$ a binary value that indicates whether the user of an unsafe well in an area of Araihazar Upazila, Bangladesh switched to a different well. If `switch` takes a value of 1, it indicates that the household switched to a new well; conversely, if `switch` takes a value of 0, the household continued using the current well. The remaining 56 variables are all covariate variables, which contain information about the household and wells in the area. For the purpose of this analysis, we only considered 7 relevant covariates from the available 56 and recoded some of them to remove some inconsistencies and redundancies, while improving interpretability. A similar scheme to the one presented in the website was used to generate our abbreviated dataset.
 
 Only two of the chosen covariates are continuous variables: `dist` indicates the distance (in meters) to the closest “safe” well, where “safe” is defined as having an arsenic concentration below 50 micrograms per liter. `arsenic` indicates the arsenic concentration (in micrograms per liter) of a household's current well. The remaining covariates are categorical variables: `educ` indicates the education level of the head of the household in years of education completed. `educ4` indicates the education level of the head of the household as a categorical variable with 4 levels: 0, 1-8, 9-12, or 12+ years of education completed. `assoc` indicates if any member of the household is active in community organizations. Originally, the questionnaire had more options to specify the type of organization ([0] no, [1] informal savings/micro-credit, [2] bazaar samiti (i.e. marketplace), [3] other), but the difference between no association and any association was more significant. The precise nature of the organization was deemed irrelevant for developing a model capable of predicting a household’s decision to switch wells. `use` indicates how the household used the well. The questionnaire asked if the well was used for drinking or cooking, but "sometimes" was also an option. Thus, it seemed logical to group the responses into four levels: Unfrequently, Drinking, Cooking, or Both. `status_perceived` indicates how the household perceived the status or condition of the well (Unsafe, Safe, or Don't Know). `well_shift` indicates if the household had shifted to a different well in the past 3 years before the study was conducted.
 
-We shall first fit the model just using distance to nearest well and then put in arsenic concentration, organizational membership, and education.
 
-
-```{r data}
+```{r data, cache=TRUE, echo=FALSE, warning=FALSE, message=FALSE}
 # Set up cleaned dataset for Bangladesh well-switching
 
 # Read in the data
@@ -66,7 +65,6 @@ all <- read.dta ("all.dta", convert.factors=F)
 missing <- is.na (all[,"func"] + all[,"as"] + all[,"distnearest"] + all[,"assn"]
                   + all[,"ed"] + all[,"ed4"] + all[, "drink"] + all[, "status"]
                   + all[, "change"] + all[, "shifted"])
-table(missing)
 
 # with the added predictors, still only 12 missing out of 6510
 
@@ -130,13 +128,346 @@ df <- data.frame(wells) %>%
          status_perceived = factor(status_perceived, levels = c("Safe", "Unsafe", "Don't Know")),
          well_shift = as.factor(well_shift))
 
-drinkorcook_wells <- wells[wells$use!=0,]
 ## Stopping point
 ```
 
-```{r EDA, fig.width = 8, fig.height = 4, echo=FALSE}
-# captions
+```{r EDA, echo=FALSE, cache=TRUE, fig.height=3, fig.width=7}
 
+### Continuous Predictors
+# Distances 
+
+fig1 <- ggplot(data = df, mapping = aes(x = dist, fill = switch)) +
+  geom_density(alpha = 0.6) + labs(x  = "Distance (m) to nearest safe well", y = "Density", 
+       title = "Distance to Wells", caption = "Figure 1")
+    
+# Education (Recoded)
+fig2 <- ggplot(data = df, mapping = aes(x = educ4, fill = switch)) +
+  geom_bar(position = "stack") + 
+  labs (x = "Years of Education", y = "Frequency", 
+       title = "Education (Recoded)", caption = "Figure 2")
+
+# Perceived Status
+fig3 <- ggplot(data = df, mapping = aes(x = status_perceived, fill = switch)) +
+  geom_bar(position = "stack") + 
+  labs (x = "Perceived Status", y = "Frequency", 
+       title = "Perceived Status", caption = "Figure 3")
+
+# Shift
+fig4 <- ggplot(data = df, mapping = aes(x = well_shift, fill = switch)) +
+  geom_bar(position = "stack") + 
+  labs (x = "Well Shift (Last 3 Years)", y = "Frequency", 
+       title = "Well Shift (Last 3 Years)", caption = "Figure 4")
+
+### Response Variable
+fig5 <- ggplot(data = df, mapping = aes(x = switch)) +
+  geom_bar(fill = "dark green") + 
+  labs (x = "Well Switch*", y = "Frequency",
+        caption = "Figure 5",
+        title = "Well Switch (Response)")
+
+grid.arrange(fig1, fig2, fig3, fig4, ncol=2)
+fig5
+
+```
+
+All observations that were included in this analysis had the arsenic concentration of their well above the Bangladesh standard of $50\space\mu g/L$. The maximum was nearly 20 times the safe concentration threshold ($965\space\mu g/L$), which highlights the urgency of the issue that needs to be addressed. Initially, it seems that arsenic content is less of a significant predictor than perceived well status and distance to nearest safe well, but interactions with other predictors are intuitively reasonable; perhaps households decide whether to switch their well based on a combination of perceptions (`status_perceived`) and science (`arsenic`), or perhaps wells that are far from the nearest safe well (`dist`) are also likely to be particularly high in arsenic concentration (`arsenic`). 
+
+The relative proportions of switch to no switch seem consistent regardless of community association, which suggests community association is not the most important predictor. However, community association should still be included in the initial model before any model selection to confirm our EDA observations are supported. 
+
+The years of education vary greatly among households; majority either have no formal education or five years. The fact that some of the levels have limited observations makes it increasingly difficult to determine if there is a significant effect, which motivated the recoding of the education variable into 4 levels. As expected, 0 years is still most frequent, but now we can argue that the overall population of interest has between 0-12 years of education (up to high school) and anything beyond (tertiary education) seems to be a luxury. Moreover, from Figure 2 it is evident that among those who have completed more than 12 years of education, most did not choose to switch. This decision could be influenced however by the fact that most of those households also do not use the water from the well for drinking or cooking, but this relationship needs to be investigated further (potential interaction between `educ` and `use`). The vast majority of households use wells for both drinking and cooking, or neither; those who do not use wells for drinking and cooking, as expected, responded they would switch most frequently.
+
+The univariate distribution of distances confirms our initial suspicions about the proximity of safe and unsafe wells. Summary statistics indicate that the maximum distance to the nearest safe well is 339.531 meters (which is reasonable for daily round trips (double distance); assume speed 1 m/s, then roughly 340 s ~ 5.7 min) and the average distance is 48.332 m. From Figure 1, it is evident that the densities do not exactly align, which supports the claim that the distance to the nearest safe well is not the only significant covariate. There is a noticeable difference in the propensity of households to switch when the distance to the nearest safe well is between 0-200 m (switching occurs with greatest probability when distance to nearest safe well is between 0-50 m), and at the tails (i.e. when the distance exceeds approximately 230 m), the densities overlap. There are also some noticeable interactions between distance and well use, since well purpose determines frequency of use and daily travel time, and between distance and perceived status, since some households did not switch even with small distances perhaps due to a misassessment of the associated risk.
+
+Based on the plot of well shift in the last 3 years and the response (Figure 4), there is evidence in the data suggesting that this covariate should be significant in the logistic regression model; note that all of the households which shifted to a different well in the past three years, expected to switch once more when informed about the unsafe well.
+
+Similarly, based on the plot of perceived well status and the response (Figure 3), there is evidence in the data suggesting that this covariate should be significant in the logistic regression model (there are seemingly significant differences, at least visually, among levels of predictor); note that a significant proportion of households who believed the well to be unsafe, still chose not to switch.
+
+### Modeling 
+
+First, we address some scaling and centering issues. It seems more reasonable to rescale distance in 100-meter units since the regression coefficient associated with a 1-meter change in distance to the nearest safe well could be misleading. The coefficient could, for instance, correspond to the difference between a house located 100 meters away from the nearest safe well and a house located 101 meters away (which is a negligible difference in practice). Furthermore, before adding interactions to our regression model, it makes sense to mean-center the continuous main effects so that we can more easily interpret the coefficients. We do not fully standardize these $-$ that is, we do not scale by their standard deviations $-$ as it is convenient to be able to consider known differences on the original scales of the data (100-meter distances and arsenic-concentration units).
+
+Now, we will provide a more technical description of our modeling framework. We have identified a binary response variable: whether a household switches to a safe well. In order to select an appropriate sampling model (Bayesian Generalized Linear Model), we need to consider the structure of the data. Specifically, we contemplated three options for the link function: logit, complementary-log-log (cloglog), and inverse-c.d.f of the standard normal distribution. Initially, we suspected that the response variable `switch` might be highly unbalanced since well ‘switching’ is contingent upon a number of factors. The visualization of the response reveals that, while there are lots of 0’s (i.e. many households choose not to switch to safe wells), there are more 1’s (i.e. even more households choose to switch to safe wells). The cloglog link function is preferable when the response is highly unbalanced, so we decided that it was not appropriate in this instance. While we suspected that the cloglog link may be applicable, the same cannot be said about the link function in probit regression (inverse-c.d.f of the standard normal distribution). Probit regression is appropriate when there is reason to believe that the binary response is generated from a latent Normal random variable. While we did not see anything in the EDA to suggest such a process, it is possible. However, we decided to use the familiar logit link function since our objective is prediction. It is well-known that probit and logistic regression models generate similar levels of predictive accuracy; therefore, using a model which assumes a latent structure (that we have no evidence of) is unnecessary.
+
+Let $Y$ be the binary response variable (`switch`), $\bs x$ be the vector of covariates in the regression model, and $\bs \beta$ be the vector of regression coefficients associated with the covariates.
+
+  - Probability model: $[Y \mid \theta] \sim \text{Bernoulli}(\theta)$
+
+  - Link function: $g(\theta)=\text{logit}(\theta)=\eta$ 
+
+  - Systematic component: $\eta = \bs x^T \bs \beta$
+
+By applying the inverse $\text{logit}$ function to both sides of the link function (which yields $\theta = \text{logit}^{-1}(\eta)$), the sampling model can be written as: 
+
+$$
+Y \mid \bs \beta \sim \text{logit}^{-1}(\bs x^T \bs \beta)
+$$
+We found that placing independent student t-distribution priors on the regression coefficients (for the covariates and intercept term) is appropriate when developing data-driven (weakly-informative prior) logistic regression models. Specifically, we decided to use student t-distributions with 7 degrees of freedom and a scale of 2.5 (prior mean 0). These hyperparameters were chosen after considering the null logistic regression model, i.e. intercept-only model. Gellman and colleagues (2008) explain that this baseline case (one-half of a success and one-half of a failure for a single Binomial trial with probability $p=\text{logit}^{-1}(\theta)$) has a corresponding likelihood of $\text{e}^{\theta/2} / (1+e^{\theta})$ and further that the density function associated with the student t-distribution (with 7 degrees of freedom and scale 2.5) is a reasonable approximation. Importantly, this choice of prior distribution assumes that the regression coefficients will be small (which is reasonable since there are lots of 0’s in the response). However, as this is a weakly-informative prior, the coefficients also have a non-trivial probability of being large (i.e. if the data suggests that the coefficients should be large, the posterior distribution will adjust the prior distribution accordingly). It is appropriate to use this weakly-informative prior distribution because the objective is to develop a data-driven model with high predictive accuracy (and we did not find any context-specific information which would restrict the prior distribution). So, the prior specification is:
+
+$$
+\beta \sim t_{7}
+$$
+Our model selection scheme involves two rounds of backward selection using the `looic` (leave-one-out) criterion: first for the model with only the intercept term and main effects and then for the optimal model from the first stage along with interaction terms. After our first stage of model selection, we noticed that, based on the output of the `loo_compare()` function (which assesses the predictive accuracy of each model), the model excluding `educ4` (but with all other main effects and the intercept) was preferred. Continuing on to the second stage, we added interaction terms to the logistic regression model. Our EDA coupled with our intuition and research informed our choice of interaction terms (see EDA). Specifically, the interaction terms we consider are: `arsenic:status_perceived`, `arsenic:dist100`, `dist100:use`, `dist100:status_perceived`, and `well_shift:dist100`. Note that the potential interaction terms (`educ4:use` and `status_perceived:educ4`) including the covariate `educ4` are excluded by default since `educ4` was eliminated from the logistic regression model during the first stage of model selection. In an ideal setting, we would have constructed our model using these interaction terms; however, the computational cost associated with adding extra interaction terms was so excessive that we decided to revert to an earlier version of the model that omitted `dist100:use` and `dist100:status_perceived`. During the second stage of backward selection using `looic` as the criterion, we noticed that the ELDP_diff for each of the candidate models was small in magnitude, considering the size of its standard error. For this reason, we decided to use our posterior predictive checks as the final step in our model selection scheme. Specifically, we computed the classification accuracy for each of the candidate models (intercept + main effects + all but one interaction). Comparing these values, we confirmed our suspicion that each of the candidate models had relatively similar predictive capabilities. The range of classification accuracies was [0.655, 0.66]. 
+
+
+```{r, echo=FALSE, cache=TRUE}
+
+# Andrew Gelman, Aleks Jakulin, Maria Grazia Pittau and Yu-Sung Su. (2009). “A Weakly Informative Default Prior Distribution For Logistic And Other Regression Models.” The Annals of Applied Statistics 2 (4): 1360--1383. http://www.stat.columbia.edu/~gelman/research/published/priors11.pdf
+
+# Scaling & Centering
+wells$dist100 <- wells$dist/100
+wells$as100 <- wells$arsenic/100
+
+wells$dist100 <- scale(wells$dist100, scale = FALSE)
+wells$as100 <- scale(wells$as100, scale = FALSE)
+
+
+seed <- 200
+
+t <- student_t(df = 7, location = 0, scale = 2.5)
+
+main_effects1 <- stan_glm(switch ~ dist100 + as100 + educ4 + assoc + use + status_perceived + well_shift, data = wells,
+                 family = binomial(link = "logit"),
+                 prior = t, prior_intercept = t,
+                 seed = seed,
+                 refresh = 0)
+(loo_main1 <- loo(main_effects1, save_psis = TRUE))
+
+no_educ1 <- stan_glm(switch ~ dist100 + as100 + assoc + use + status_perceived + well_shift, data = wells,
+                 family = binomial(link = "logit"),
+                 prior = t, prior_intercept = t,
+                 seed = seed,
+                 refresh = 0)
+(loo_no_educ1 <- loo(no_educ1, save_psis = TRUE))
+
+no_arsenic_m <- stan_glm(switch ~ dist100 + educ4 + assoc + use + status_perceived + well_shift, data = wells,
+                 family = binomial(link = "logit"),
+                 prior = t, prior_intercept = t,
+                 seed = seed,
+                 refresh = 0)
+(loo_no_arsenic <- loo(no_arsenic_m, save_psis = TRUE))
+
+no_assoc_m <- stan_glm(switch ~ dist100 + arsenic + educ4 + use + status_perceived + well_shift, data = wells,
+                 family = binomial(link = "logit"),
+                 prior = t, prior_intercept = t,
+                 seed = seed,
+                 refresh = 0)
+(loo_no_assoc <- loo(no_assoc_m, save_psis = TRUE))
+
+no_use_m <- stan_glm(switch ~ dist100 + arsenic + educ4 + assoc + status_perceived + well_shift, data = wells,
+                 family = binomial(link = "logit"),
+                 prior = t, prior_intercept = t,
+                 seed = seed,
+                 refresh = 0)
+(loo_no_use <- loo(no_use_m, save_psis = TRUE))
+
+no_status_perceived_m <- stan_glm(switch ~ dist100 + arsenic + educ4 + assoc + use + well_shift, data = wells,
+                 family = binomial(link = "logit"),
+                 prior = t, prior_intercept = t,
+                 seed = seed,
+                 refresh = 0)
+(loo_no_status <- loo(no_status_perceived_m, save_psis = TRUE))
+
+no_well_shift_m <- stan_glm(switch ~ dist100 + arsenic + educ4 + assoc + use + status_perceived, data = wells,
+                 family = binomial(link = "logit"),
+                 prior = t, prior_intercept = t,
+                 seed = seed,
+                 refresh = 0)
+(loo_no_shift <- loo(no_well_shift_m, save_psis = TRUE))
+
+loo_compare(loo_main1, loo_no_educ1, loo_no_arsenic, loo_no_assoc, loo_no_use, loo_no_status, loo_no_shift)
+
+############################### FIRST STEP
+
+no_educ_dist <- stan_glm(switch ~ as100 + assoc + use + status_perceived + well_shift, data = wells,
+                 family = binomial(link = "logit"),
+                 prior = t, prior_intercept = t,
+                 seed = seed,
+                 refresh = 0)
+(loo_no_educ_dist <- loo(no_educ_dist, save_psis = TRUE))
+
+no_educ_as <- stan_glm(switch ~ dist100 + assoc + use + status_perceived + well_shift, data = wells,
+                 family = binomial(link = "logit"),
+                 prior = t, prior_intercept = t,
+                 seed = seed,
+                 refresh = 0)
+(loo_no_educ_as <- loo(no_educ_as, save_psis = TRUE))
+
+no_educ_assoc <- stan_glm(switch ~ dist100 + as100 + use + status_perceived + well_shift, data = wells,
+                 family = binomial(link = "logit"),
+                 prior = t, prior_intercept = t,
+                 seed = seed,
+                 refresh = 0)
+(loo_no_educ_assoc <- loo(no_educ_assoc, save_psis = TRUE))
+
+no_educ_use <- stan_glm(switch ~ dist100 + as100 + assoc + status_perceived + well_shift, data = wells,
+                 family = binomial(link = "logit"),
+                 prior = t, prior_intercept = t,
+                 seed = seed,
+                 refresh = 0)
+(loo_no_educ_use <- loo(no_educ_use, save_psis = TRUE))
+
+no_educ_status <- stan_glm(switch ~ dist100 + as100 + assoc + use + well_shift, data = wells,
+                 family = binomial(link = "logit"),
+                 prior = t, prior_intercept = t,
+                 seed = seed,
+                 refresh = 0)
+(loo_no_educ_status <- loo(no_educ_status, save_psis = TRUE))
+
+no_educ_shift <- stan_glm(switch ~ dist100 + as100 + assoc + use + status_perceived, data = wells,
+                 family = binomial(link = "logit"),
+                 prior = t, prior_intercept = t,
+                 seed = seed,
+                 refresh = 0)
+(loo_no_educ_shift <- loo(no_educ_shift, save_psis = TRUE))
+
+loo_compare(loo_no_educ1, loo_no_educ_dist, loo_no_educ_as, loo_no_educ_assoc, loo_no_educ_use, loo_no_educ_status, loo_no_educ_shift)
+
+
+################# SECOND STEP
+no_educ_interac <- stan_glm(switch ~ dist100 + arsenic + assoc + status_perceived + well_shift + arsenic*status_perceived + arsenic*dist100 + well_shift*dist100, data = wells,
+                 family = binomial(link = "logit"),
+                 prior = t, prior_intercept = t,
+                 seed = seed,
+                 refresh = 0)
+(loo_no_educ_interac <- loo(no_educ_interac, save_psis = TRUE))
+
+no_educ_interac_noassta <- stan_glm(switch ~ dist100 + arsenic + assoc + status_perceived + well_shift + arsenic*dist100 + well_shift*dist100, data = wells,
+                 family = binomial(link = "logit"),
+                 prior = t, prior_intercept = t,
+                 seed = seed,
+                 refresh = 0)
+(loo_no_educ_interac_noassta <- loo(no_educ_interac_noassta, save_psis = TRUE))
+
+no_educ_interac_noasdist <- stan_glm(switch ~ dist100 + arsenic + assoc + status_perceived + well_shift + arsenic*status_perceived + well_shift*dist100, data = wells,
+                 family = binomial(link = "logit"),
+                 prior = t, prior_intercept = t,
+                 seed = seed,
+                 refresh = 0)
+(loo_no_educ_interac_noasdist <- loo(no_educ_interac_noasdist, save_psis = TRUE))
+
+no_educ_interac_nodistshift <- stan_glm(switch ~ dist100 + arsenic + assoc + status_perceived + well_shift + arsenic*status_perceived + arsenic*dist100, data = wells,
+                 family = binomial(link = "logit"),
+                 prior = t, prior_intercept = t,
+                 seed = seed,
+                 refresh = 0)
+(loo_no_educ_interac_nodistshift <- loo(no_educ_interac_nodistshift, save_psis = TRUE))
+
+loo_compare(loo_no_educ_interac, loo_no_educ_interac_noassta, loo_no_educ_interac_noasdist, loo_no_educ_interac_nodistshift)
+
+preds <- posterior_epred(no_educ_interac)
+pred <- colMeans(preds)
+pr <- as.integer(pred >= 0.5)
+
+ploo=E_loo(preds, loo_no_educ_interac_noassta$psis_object, type="mean", log_ratios = -log_lik(no_educ_interac))$value
+round(mean(xor(ploo>0.5,as.integer(wells$switch==0))),3)
+
+#ploo = 0.66 no education, all interactions
+
+preds <- posterior_epred(no_educ_interac_noassta)
+pred <- colMeans(preds)
+ploo=E_loo(preds, loo_no_educ_interac_noassta$psis_object, type="mean", log_ratios = -log_lik(no_educ_interac_noassta))$value
+round(mean(xor(ploo>0.5,as.integer(wells$switch==0))),3)
+
+#ploo = 0.655 no education, no arsenic*status interaction
+
+#NEXT
+
+preds <- posterior_epred(no_educ_interac_noasdist)
+pred <- colMeans(preds)
+pr <- as.integer(pred >= 0.5)
+
+ploo=E_loo(preds, loo_no_educ_interac_noassta$psis_object, type="mean", log_ratios = -log_lik(no_educ_interac_noasdist))$value
+round(mean(xor(ploo>0.5,as.integer(wells$switch==0))),3)
+
+#ploo = 0.658 no education, no arsenic*distance
+
+#NEXT
+preds <- posterior_epred(no_educ_interac_nodistshift)
+pred <- colMeans(preds)
+pr <- as.integer(pred >= 0.5)
+
+ploo=E_loo(preds, loo_no_educ_interac_noassta$psis_object, type="mean", log_ratios = -log_lik(no_educ_interac_nodistshift))$value
+round(mean(xor(ploo>0.5,as.integer(wells$switch==0))),3)
+
+#ploo = 0.658 no education, no distance*shift interaction
+
+```
+
+```{r diagnostics, cache = TRUE}
+#dist
+matrix <- as.matrix(no_educ_interac)
+trace.dist <- plot(matrix[,2], type="l")
+acf.dist <- acf(matrix[,2])
+#dist
+trace.dist <- plot(matrix[,3], type="l")
+acf.dist <- acf(matrix[,3])
+#dist
+trace.dist <- plot(matrix[,4], type="l")
+acf.dist <- acf(matrix[,4])
+#dist
+trace.dist <- plot(matrix[,5], type="l")
+acf.dist <- acf(matrix[,5])
+#dist
+trace.dist <- plot(matrix[,6], type="l")
+acf.dist <- acf(matrix[,6])
+#dist
+trace.dist <- plot(matrix[,7], type="l")
+acf.dist <- acf(matrix[,7])
+#
+trace.dist <- plot(matrix[,8], type="l")
+acf.dist <- acf(matrix[,8])
+```
+
+### Final Model
+The posterior regression coefficients are given in the following table:
+```{r}
+round(coef(no_educ_interac), 3)
+round(posterior_interval(no_educ_interac, prob = 0.95), 3)
+```
+
+### Final Model
+```{r}
+data.frame(Coefficient = round(coef(no_educ_interac), 3),
+           Interval = round(posterior_interval(no_educ_interac, prob = 0.95), 3)) %>%
+  kable()
+```
+
+
+### Model Diagnostics
+
+The final model goodness-of-fit as well as MCMC convergence and mixing performance was checked via diagnostics. To check the model goodness-of-fit, we assesed the classification accuracy of the model. We calculated the posterior predictive probabilities. If the posterior predictive probability of success (switching wells) for an individual household is greater than or equal to $0.5$, then we would predict that observation to be a success (and analogously for less than $0.5$). For each observation, we can then compare the posterior prediction to the actual observed value (whether the household did switch wells). The resulting classification accuracy can be determined via a Leave-One-Out Cross Validation (LOOCV) approach, which uses importance weights generated from the `loo()` function. We found that the estimated classification accuracy for the final model is 0.66, which is indicative of a model with moderate predictive accuracy. However, this is not the most precise estimate, since we did not use unseen observations (test set). Instead, we used all of the available data in fitting the model. According to the trace plots for all posterior regression coefficients except the one associated with `well_shift`, the MCMC chains appear to converge immediately and mix well. Similarly, the Auto Correlation Function (ACF) plots for all posterior regression coefficients, except the one associated with `well_shift`, demonstrate that there is no significant autocorrelation between contiguous samples (since the bars in the plots are low). On the other hand, the trace plot corresponding to the posterior regression coefficient associated with `well_shift` illustrates how the MCMC chain converges slowly and mixes poorly. Also, there is significant autocorrelation between contiguous samples (since the bars in the plots are high). In an attempt to address this issue, we considered including additional interaction terms (which were supported by the EDA), but were unable to do so due to computational constraints.
+
+### Conclusions and Limitations
+
+Based on the classification accuracy of the final model, we can draw some conclusions about its predictive capabilities in the context of welfare programs in the Araihazar Upazila. First, as this model only has moderate classification accuracy, its utility to government welfare agencies might not be very high. However, based on the covariates in the final model, we can identify some general characteristics about the types of households which may be reluctant to switch from an unsafe well to a safe well. The significant covariates (the 95% credible interval for the coefficient does not include zero) are arsenic content in the current well, whether a member of the household belongs to a community organization, the perceived status of the current well, whether the household had switched wells in the last 3 years, and how the household uses the well. This means that tailored campaigns should attempt to address these features to increase a household's propensity to switch wells when their current well has been deemed unsafe.
+
+Our dataset is limited to a single upazila within Bangladesh, so any conclusions we draw cannot be extrapolated to different regions. Most of the data can be considered subjective due to the data collection procedure. The research team gathered the data through a questionnaire, and this form of data collection naturally leads to heavily biased observations. The sampling model that was selected for this Bayesian analysis $-$ logistic regression $-$ assumes observations are plausibly conditionally independent. In our case, as a result of the structure of the data, this assumption regarding conditional independence is not necessarily satisfied. This dataset and analysis focuses on a very small, rural area in Bangladesh where houses are presumably very close to one another. Based on the significance of `status_perceived` as a covariate in the final model, we know that the household’s perception of the well (i.e. its safety) impacts the decision of whether to switch wells. In reality, these perceptions and beliefs are heavily impacted by interactions with other people. So, if one household believes that a well is unsafe and is in close proximity to another household (included in the data), then the decisions of the two households may be dependent. For instance, perhaps the head of one household discusses the safety of the well with another household’s members. Here, the two households (i.e. observations) would likely not be conditionally independent. To resolve this issue, a conditional logistic regression model may be considered. In this new modeling framework, the project goal would have to be adjusted since this Bayesian Generalized Linear Model requires that there be a fixed number of successes and failures within each stratum.
+
+### References
+
+- Araihazar Upazila. Banglapedia. (n.d.). http://en.banglapedia.org/index.php?title=Araihazar_Upazila. 
+
+- Arsenic. WHO. (n.d). https://www.who.int/news-room/fact-sheets/detail/arsenic
+
+- Cha, Y. K., Kim, Y. M., Choi, J. W., Sthiannopkao, S., & Cho, K. H. (2016). Bayesian modeling approach for characterizing groundwater arsenic contamination in the Mekong River basin. Chemosphere, 143, 50–56. https://doi.org/10.1016/j.chemosphere.2015.02.045 
+
+- Estimating Generalized Linear Models for Binary and Binomial Data with rstanarm. rstanarm. (n.d.). https://mc-stan.org/rstanarm/articles/binomial.html#logistic-regression-example-1. 
+
+- Gelman, A. & Hill, J. (2007). Data analysis using regression and multilevel/hierarchical models. Cambridge Univ. Press. 
+
+- Gelman, A., Jakulin, A., Grazia Pittau, M., & Su, Y.-S. (2008). A Weakly Informative Default Prior Distribution For Logistic And Other Regression Models. The Annals of Applied Statistics, 2(4), 1360–1383. https://doi.org/10.1214/08-AOAS191 
+
+- Index of /~gelman/arm/examples/arsenic. (n.d.). http://www.stat.columbia.edu/~gelman/arm/examples/arsenic/. 
+
+- Van Geen, A., Cheng, Z., Jia, Q., Seddique, A. A., Rahman, M. W., Rahman, M. M., & Ahmed, K. M. (2007). Monitoring 51 community wells in Araihazar, Bangladesh, for up to 5 years: Implications for arsenic mitigation. Journal of Environmental Science and Health, Part A, 42(12), 1729–1740. https://doi.org/10.1080/10934520701564236 
+
+- Water, sanitation and hygiene (WASH). UNICEF South Asia. (n.d.). https://www.unicef.org/rosa/water-sanitation-and-hygiene-wash. 
+
+### Appendix
+
+Here we have displayed the full EDA, which was omitted from the report.
+
+```{r echo=FALSE, fig.height=4, fig.width=6.5}
 ### Continuous Predictors
 # Distances 
 hist(dist, breaks=seq(0,10+max(dist[!is.na(dist)]),10), 
@@ -150,10 +481,6 @@ wells %>%
             median = median(dist), 
             IQR = IQR(dist)) %>%
   kable(digits = 3)
-
-ggplot(data = df, mapping = aes(x = dist, fill = switch)) +
-  geom_density(alpha = 0.6) + labs(x  = "Distance (m) to nearest safe well", y = "Density", 
-       title = "Distance to Wells")
     
 # Arsenic 
 hist(arsenic, breaks=seq(0,100+max(arsenic[!is.na(arsenic)]),50), 
@@ -188,11 +515,6 @@ ggplot(data = df, mapping = aes(x = educ, fill = switch)) +
   geom_histogram(binwidth = 1) +
   labs(x  = "Years of Education", y = "Frequency", 
        title = "Education")
-# Education (Recoded)
-ggplot(data = df, mapping = aes(x = educ4, fill = switch)) +
-  geom_bar(position = "stack") + 
-  labs (x = "Years of Education", y = "Frequency", 
-       title = "Education (Recoded)")
 
 # Community Association
 ggplot(data = df, mapping = aes(x = assoc, fill = switch)) +
@@ -204,25 +526,6 @@ ggplot(data = df, mapping = aes(x = use, fill = switch)) +
   geom_bar(position = "stack") + 
   labs (x = "Well Use", y = "Frequency", 
        title = "Well Use")
-
-# Perceived Status
-ggplot(data = df, mapping = aes(x = status_perceived, fill = switch)) +
-  geom_bar(position = "stack") + 
-  labs (x = "Perceived Status", y = "Frequency", 
-       title = "Perceived Status")
-
-# Shift
-ggplot(data = df, mapping = aes(x = well_shift, fill = switch)) +
-  geom_bar(position = "stack") + 
-  labs (x = "Well Shift (Last 3 Years)", y = "Frequency", 
-       title = "Well Shift (Last 3 Years)")
-
-### Response Variable
-ggplot(data = df, mapping = aes(x = switch)) +
-  geom_bar(fill = "dark green") + 
-  labs (x = "Well Switch*", y = "Frequency",
-        caption = "*0 = No,  1 = Yes",
-        title = "Well Switch (Response)")
 
 
 ### Interactions
@@ -244,283 +547,5 @@ ggplot(data = df, mapping = aes(x = arsenic, fill = use)) +
 ggplot(data = df, mapping = aes(x = arsenic, y = dist)) +
   geom_point() + labs(x  = "Arsenic Content (micrograms per liter)", y = "Distance (m) to nearest safe well", 
        title = "Arsenic Content vs Distance to Wells")
-```
-
-All observations that were included in this analysis had the arsenic concentration of their well above the Bangladesh standard of $50\space\mu g/L$. The maximum was nearly 20 times the safe concentration threshold ($965\space\mu g/L$), which highlights the urgency of the issue that needs to be addressed. Initially, it seems that arsenic content is less of a significant predictor than perceived well status and distance to nearest safe well, but interactions with other predictors are intuitively reasonable; perhaps households decide whether to switch their well based on a combination of perceptions and science, or perhaps wells that are far from the nearest safe well are also likely to be particularly high in arsenic. 
-
-The relative proportions of switch to no switch seem consistent regardless of community association, which suggests community association is not the most important predictor. However, community association should still be included in the initial model before any model selection to confirm our EDA observations are supported. 
-
-The years of education vary greatly among households; majority either have no formal education or five years. The fact that some of the levels have limited observations makes it increasingly difficult to determine if there is a significant effect, which motivated the recoding of the education variable into 4 levels. As expected, 0 years is still most frequent, but now we can argue that the overall population of interest has between 0-12 years of education (up to high school) and anything beyond (tertiary education) seems to be a luxury. Moreover, from *FIGURE NUMBER* it is evident that among those who have completed more than 12 years of education, most did not choose to switch. This decision could be influenced however by the fact that most of those households also do not use the water from the well for drinking or cooking, but this relationship needs to be investigated further. The vast majority of households use wells for both drinking and cooking, or neither; those who do not use wells for drinking and cooking, as expected, responded they would switch most frequently.
-
-The univariate distribution of distances confirms our initial suspicions about the proximity of safe and unsafe wells. Summary statistics indicate that the maximum distance to the nearest safe well is 339.531 meters (which is reasonable for daily round trips (double distance); assume speed 1 m/s, then roughly 340 s ~ 5.7 min) and the average distance is 48.332 m. From *FIGURE NUMBER*, it is evident that the densities do not exactly align, which supports the claim that the distance to the nearest safe well is not the only significant covariate. There is a noticeable difference in the propensity of households to switch when the distance to the nearest safe well is between 0-200 m (switching occurs with greatest probability when distance to nearest safe well is between 0-50 m), and at the tails (i.e. when the distance exceeds approximately 230 m), the densities overlap.
-
-Based on the plot of well shift in the last 3 years and the response (*FIGURE NUMBER*), there is evidence in the data suggesting that this covariate should be significant in the logistic regression model; note that all of the households which shifted to a different well in the past three years, expected to switch once more when informed about the unsafe well.
-
-Similarly, based on the plot of perceived well status and the response (*FIGURE NUMBER*), there is evidence in the data suggesting that this covariate should be significant in the logistic regression model (there are seemingly significant differences, at least visually, among levels of predictor); note that a significant proportion of households who believed the well to be unsafe, still chose not to switch.
-
-# Modeling 
-
-It seems more reasonable to rescale distance in 100-meter units since the regression coefficient associated with a 1-meter change in distance to the nearest safe well can be misleading. The coefficient could, for instance, correspond to the difference between a house located 100 meters away from the nearest safe well and a house located 101 meters away (a negligible difference in practice).
-
-Before fitting interactions, it makes sense to mean-center the continuous main effects so that we can more easily interpret the coefficients. We do not fully standardize these — that is, we do not scale by their standard deviations — because it is convenient to be able to consider known differences on the original scales of the data (100-meter distances and arsenic-concentration units).
-
-Now, we will provide a more technical description of our modeling framework. We have identified a binary response variable. In order to select an appropriate sampling model (Bayesian Generalized Linear Model), we need to consider the structure of the data. Specifically, we contemplated three options for the link function: logit, complementary-log-log (cloglog), and inverse-c.d.f of the standard normal distribution. Initially, we suspected that the binary response variable `switch` might be highly unbalanced since well ‘switching’ is contingent upon a number of factors. The visualization of the response reveals that, while there are lots of 0’s (i.e. many households choose not to switch to safe wells), there are more 1’s (i.e. even more households choose to switch to safe wells).The cloglog link function is preferable when the response is highly unbalanced, so we decided that it was not appropriate in this instance. While we suspected that the cloglog link may be applicable, the same cannot be said about the link function in probit regression (inverse-c.d.f of the standard normal distribution). Probit regression is appropriate when there is reason to believe that the binary response is generated from a latent Normal random variable. While we did not see anything in the EDA to suggest such a process, it is possible. However, we decided to use the familiar logit link function since our objective is prediction. It is well-known that probit and logistic regression models generate similar levels of predictive accuracy; therefore, using a model which assumes a latent structure (that we have no evidence of) is unnecessary.
-
-Let $Y$ be the binary response variable (`switch`), $\bs x$ be the vector of covariates in the regression model, and $\bs \beta$ be the vector of regression coefficients associated with the covariates.
-
-  - Probability model: $[Y \mid \theta] \sim \text{Bernoulli}(\theta)$
-
-  - Link function: $g(\theta)=\text{logit}(\theta)=\eta$ 
-
-  - Systematic component: $\eta = \bs x^T \bs \beta$
-
-By applying the inverse $\text{logit}$ function to both sides of the link function (which yields $\theta = \text{logit}^{-1}(\eta)$), the sampling model can be written as: 
-
-$$
-Y \mid \bs \beta \sim \text{logit}^{-1}(\bs x^T \bs \beta)
-$$
-We found that placing independent student t-distribution priors on the regression coefficients (for the covariates and intercept term) is appropriate when developing data-driven (weakly-informative prior) logistic regression models. Specifically, we decided to use student t-distributions with 7 degrees of freedom and a scale of 2.5 (prior mean 0). These hyperparameters were chosen after considering the null logistic regression model, i.e. intercept-only model. Gellman and colleagues explain that this baseline case (one-half of a success and one-half of a failure for a single Binomial trial with probability $p=\text{logit}^{-1}(\theta)$) has a corresponding likelihood of $\text{e}^{\theta/2} / (1+e^{\theta})$ and further that the density function associated with the student t-distribution (with 7 degrees of freedom and scale 2.5) is a reasonable approximation. Importantly, this choice of prior distribution assumes that the regression coefficients will be small. However, the coefficients have a non-zero probability of being relatively large. It is appropriate to use this weakly-informative prior distribution because the objective is to develop a data-driven model with high predictive accuracy (and we did not find any context-specific information which would restrict the prior distribution). So, the prior specification is:
-
-$$
-\beta \sim t_{7}
-$$
-Our modeling strategy includes a single round of model selection. We perform backward selection using `looic` (leave-one-out) criterion on the model including the intercept term, main effects, and interaction terms. We considered performing two rounds of model selection - first for the model with only the intercept term and main effects and then for the optimal model from the first stage along with interaction terms. Our EDA identified several potentially significant interaction terms. In the second model selection strategy, some of these terms would be excluded by default since the corresponding main effects would not be included in the optimal model from the first stage of selection. Hence, we proceeded with a single, comprehensive round of backward selection.
-
-- Main effects: dist100, arsenic, educ4, assoc, use, status_perceived, well_shift
-- Interaction terms: arsenic:status_perceived, arsenic:dist, educ4:use, dist100:use, dist100:status_perceived, well_shift:dist100, status_perceived:use, status_perceived:educ4
-
-Interaction terms with `educ4` are excluded by default since `educ4` was eliminated from the logistic regression model during the first stage of model selection.
-
-```{r, echo=FALSE}
-
-# Andrew Gelman, Aleks Jakulin, Maria Grazia Pittau and Yu-Sung Su. (2009). “A Weakly Informative Default Prior Distribution For Logistic And Other Regression Models.” The Annals of Applied Statistics 2 (4): 1360--1383. http://www.stat.columbia.edu/~gelman/research/published/priors11.pdf
-
-# Scaling & Centering
-wells$dist100 <- wells$dist/100
-wells$as100 <- wells$arsenic/100
-
-wells$dist100 <- scale(wells$dist100, scale = FALSE)
-wells$as100 <- scale(wells$as100, scale = FALSE)
-
-
-seed <- 200
-
-t <- student_t(df = 7, location = 0, scale = 2.5)
-
-main_effects1 <- stan_glm(switch ~ dist100 + as100 + educ4 + assoc + use + status_perceived + well_shift, data = wells,
-                 family = binomial(link = "logit"), 
-                 prior = t, prior_intercept = t,
-                 seed = seed,
-                 refresh = 0)
-(loo_main1 <- loo(main_effects1, save_psis = TRUE))
-
-no_educ1 <- stan_glm(switch ~ dist100 + as100 + assoc + use + status_perceived + well_shift, data = wells,
-                 family = binomial(link = "logit"), 
-                 prior = t, prior_intercept = t,
-                 seed = seed,
-                 refresh = 0)
-(loo_no_educ1 <- loo(no_educ1, save_psis = TRUE))
-
-no_arsenic_m <- stan_glm(switch ~ dist100 + educ4 + assoc + use + status_perceived + well_shift, data = wells,
-                 family = binomial(link = "logit"), 
-                 prior = t, prior_intercept = t,
-                 seed = seed,
-                 refresh = 0)
-(loo_no_arsenic <- loo(no_arsenic_m, save_psis = TRUE))
-
-no_assoc_m <- stan_glm(switch ~ dist100 + arsenic + educ4 + use + status_perceived + well_shift, data = wells,
-                 family = binomial(link = "logit"), 
-                 prior = t, prior_intercept = t,
-                 seed = seed,
-                 refresh = 0)
-(loo_no_assoc <- loo(no_assoc_m, save_psis = TRUE))
-
-no_use_m <- stan_glm(switch ~ dist100 + arsenic + educ4 + assoc + status_perceived + well_shift, data = wells,
-                 family = binomial(link = "logit"), 
-                 prior = t, prior_intercept = t,
-                 seed = seed,
-                 refresh = 0)
-(loo_no_use <- loo(no_use_m, save_psis = TRUE))
-
-no_status_perceived_m <- stan_glm(switch ~ dist100 + arsenic + educ4 + assoc + use + well_shift, data = wells,
-                 family = binomial(link = "logit"), 
-                 prior = t, prior_intercept = t,
-                 seed = seed,
-                 refresh = 0)
-(loo_no_status <- loo(no_status_perceived_m, save_psis = TRUE))
-
-no_well_shift_m <- stan_glm(switch ~ dist100 + arsenic + educ4 + assoc + use + status_perceived, data = wells,
-                 family = binomial(link = "logit"), 
-                 prior = t, prior_intercept = t,
-                 seed = seed,
-                 refresh = 0)
-(loo_no_shift <- loo(no_well_shift_m, save_psis = TRUE))
-
-loo_compare(loo_main1, loo_no_educ1, loo_no_arsenic, loo_no_assoc, loo_no_use, loo_no_status, loo_no_shift)
-
-############################### FIRST STEP
-
-no_educ_dist <- stan_glm(switch ~ as100 + assoc + use + status_perceived + well_shift, data = wells,
-                 family = binomial(link = "logit"), 
-                 prior = t, prior_intercept = t,
-                 seed = seed,
-                 refresh = 0)
-(loo_no_educ_dist <- loo(no_educ_dist, save_psis = TRUE))
-
-no_educ_as <- stan_glm(switch ~ dist100 + assoc + use + status_perceived + well_shift, data = wells,
-                 family = binomial(link = "logit"), 
-                 prior = t, prior_intercept = t,
-                 seed = seed,
-                 refresh = 0)
-(loo_no_educ_as <- loo(no_educ_as, save_psis = TRUE))
-
-no_educ_assoc <- stan_glm(switch ~ dist100 + as100 + use + status_perceived + well_shift, data = wells,
-                 family = binomial(link = "logit"), 
-                 prior = t, prior_intercept = t,
-                 seed = seed,
-                 refresh = 0)
-(loo_no_educ_assoc <- loo(no_educ_assoc, save_psis = TRUE))
-
-no_educ_use <- stan_glm(switch ~ dist100 + as100 + assoc + status_perceived + well_shift, data = wells,
-                 family = binomial(link = "logit"), 
-                 prior = t, prior_intercept = t,
-                 seed = seed,
-                 refresh = 0)
-(loo_no_educ_use <- loo(no_educ_use, save_psis = TRUE))
-
-no_educ_status <- stan_glm(switch ~ dist100 + as100 + assoc + use + well_shift, data = wells,
-                 family = binomial(link = "logit"), 
-                 prior = t, prior_intercept = t,
-                 seed = seed,
-                 refresh = 0)
-(loo_no_educ_status <- loo(no_educ_status, save_psis = TRUE))
-
-no_educ_shift <- stan_glm(switch ~ dist100 + as100 + assoc + use + status_perceived, data = wells,
-                 family = binomial(link = "logit"), 
-                 prior = t, prior_intercept = t,
-                 seed = seed,
-                 refresh = 0)
-(loo_no_educ_shift <- loo(no_educ_shift, save_psis = TRUE))
-
-loo_compare(loo_no_educ1, loo_no_educ_dist, loo_no_educ_as, loo_no_educ_assoc, loo_no_educ_use, loo_no_educ_status, loo_no_educ_shift)
-
-
-################# SECOND STEP
-no_educ_interac <- stan_glm(switch ~ dist100 + arsenic + assoc + status_perceived + well_shift + arsenic*status_perceived + arsenic*dist100 + dist100*status_perceived + well_shift*dist100, data = wells,
-                 family = binomial(link = "logit"), 
-                 prior = t, prior_intercept = t,
-                 seed = seed,
-                 refresh = 0)
-(loo_no_educ_interac <- loo(no_educ_interac, save_psis = TRUE))
-
-no_educ_interac_noassta <- stan_glm(switch ~ dist100 + arsenic + assoc + status_perceived + well_shift + arsenic*dist100 + dist100*status_perceived + well_shift*dist100, data = wells,
-                 family = binomial(link = "logit"), 
-                 prior = t, prior_intercept = t,
-                 seed = seed,
-                 refresh = 0)
-(loo_no_educ_interac_noassta <- loo(no_educ_interac_noassta, save_psis = TRUE))
-
-no_educ_interac_noasdist <- stan_glm(switch ~ dist100 + arsenic + assoc + status_perceived + well_shift + arsenic*status_perceived + dist100*status_perceived + well_shift*dist100, data = wells,
-                 family = binomial(link = "logit"), 
-                 prior = t, prior_intercept = t,
-                 seed = seed,
-                 refresh = 0)
-(loo_no_educ_interac_noasdist <- loo(no_educ_interac_noasdist, save_psis = TRUE))
-
-no_educ_interac_nodistshift <- stan_glm(switch ~ dist100 + arsenic + assoc + status_perceived + well_shift + arsenic*status_perceived + arsenic*dist100 + dist100*status_perceived, data = wells,
-                 family = binomial(link = "logit"), 
-                 prior = t, prior_intercept = t,
-                 seed = seed,
-                 refresh = 0)
-(loo_no_educ_interac_nodistshift <- loo(no_educ_interac_nodistshift, save_psis = TRUE))
-
-loo_compare(loo_no_educ_interac, loo_no_educ_interac_noassta, loo_no_educ_interac_noasdist, loo_no_educ_interac_nodistshift)
-
-preds <- posterior_epred(no_educ_interac)
-pred <- colMeans(preds)
-pr <- as.integer(pred >= 0.5)
-
-ploo=E_loo(preds, loo_no_educ_interac_noassta$psis_object, type="mean", log_ratios = -log_lik(no_educ_interac))$value
-round(mean(xor(ploo>0.5,as.integer(wells$switch==0))),3)
-
-#ploo = 0.66 no education, all interactions
-
-#NEXT
-
-#Below, we compute posterior predictive probabilities of the linear predictor via the `posterior_linpred()` function provided in the `rstanarm` package. This function will extract posterior draws from the linear predictor. If we used a link function, then specifying the transform argument as `TRUE` will return the predictor as transformed via the inverse-link.
-
-preds <- posterior_epred(no_educ_interac_noassta)
-pred <- colMeans(preds)
-pr <- as.integer(pred >= 0.5)
-
-#We calculate these posterior predictive probabilities in order to determine the classification accuracy of our model. If the posterior probability of success for an individual is greater or equal to $0.5$, then we would predict that observation to be a success (and similarly for less than $0.5$). For each observation, we can compare the posterior prediction to the actual observed value. The proportion of times we correctly predict an individual (i.e. [prediction = 0 and observation = 0] or [prediction = 1 and observation = 1]) is our classification accuracy.
-
-round(mean(xor(pr,as.integer(wells$switch==0))),3)
-
-
-#However, we should really be evaluating the classification accuracy of our model on unseen data. This can be done via a LOOCV approach or by using a test dataset. Here we use the former approach to illustrate the function `E_loo()`, which uses importance weights generated from the `loo()` function.
-
-
-ploo=E_loo(preds, loo_no_educ_interac_noassta$psis_object, type="mean", log_ratios = -log_lik(no_educ_interac_noassta))$value
-round(mean(xor(ploo>0.5,as.integer(wells$switch==0))),3)
-
-#ploo = 0.655 no education, no arsenic*status interaction
-
-#NEXT
-
-preds <- posterior_epred(no_educ_interac_noasdist)
-pred <- colMeans(preds)
-pr <- as.integer(pred >= 0.5)
-
-ploo=E_loo(preds, loo_no_educ_interac_noassta$psis_object, type="mean", log_ratios = -log_lik(no_educ_interac_noasdist))$value
-round(mean(xor(ploo>0.5,as.integer(wells$switch==0))),3)
-
-#ploo = 0.658 no education, no arsenic*distance
-
-#NEXT
-preds <- posterior_epred(no_educ_interac_nodistshift)
-pred <- colMeans(preds)
-pr <- as.integer(pred >= 0.5)
-
-ploo=E_loo(preds, loo_no_educ_interac_noassta$psis_object, type="mean", log_ratios = -log_lik(no_educ_interac_nodistshift))$value
-round(mean(xor(ploo>0.5,as.integer(wells$switch==0))),3)
-
-#ploo = 0.658 no education, no distance*shift interaction
-```
-
-```{r diagnostics}
-#dist
-matrix <- as.matrix(no_educ_interac)
-trace.dist <- plot(matrix[,2], type="l")
-acf.dist <- acf(matrix[,2])
-#dist
-matrix <- as.matrix(no_educ_interac)
-trace.dist <- plot(matrix[,3], type="l")
-acf.dist <- acf(matrix[,3])
-#dist
-matrix <- as.matrix(no_educ_interac)
-trace.dist <- plot(matrix[,4], type="l")
-acf.dist <- acf(matrix[,4])
-#dist
-matrix <- as.matrix(no_educ_interac)
-trace.dist <- plot(matrix[,5], type="l")
-acf.dist <- acf(matrix[,5])
-#dist
-matrix <- as.matrix(no_educ_interac)
-trace.dist <- plot(matrix[,6], type="l")
-acf.dist <- acf(matrix[,6])
-#dist
-matrix <- as.matrix(no_educ_interac)
-trace.dist <- plot(matrix[,7], type="l")
-acf.dist <- acf(matrix[,7])
-```
-
-```{r}
-plot(c(0,max(arsenic,na.rm=TRUE)*1.02), c(0,1), xlab="Arsenic concentration in well water", ylab="Pr (switching)", type="n", xaxs="i", yaxs="i", mgp=c(2,.5,0))
-points (arsenic, jitter.binary(switch), pch=20, cex=.1)
-curve (invlogit(coef(fit.4)[1]+coef(fit.4)[2]*0+coef(fit.4)[3]*x+coef(fit.4)[4]*0*x), from=0.5, lwd=.5, add=TRUE)
-curve (invlogit(coef(fit.4)[1]+coef(fit.4)[2]*0.5+coef(fit.4)[3]*x+coef(fit.4)[4]*0.5*x), from=0.5, lwd=.5, add=TRUE)
-text (.50, .78, "if dist = 0", adj=0, cex=.8)
-text (2.00, .6, "if dist = 50", adj=0, cex=.8)
 ```
 
