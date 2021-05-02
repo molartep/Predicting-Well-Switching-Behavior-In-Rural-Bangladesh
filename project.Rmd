@@ -131,56 +131,62 @@ df <- data.frame(wells) %>%
 ## Stopping point
 ```
 
-```{r EDA, echo=FALSE, cache=TRUE, fig.height=3, fig.width=7}
+```{r EDA, echo=FALSE, cache=TRUE, fig.height=4, fig.width=7}
 
 ### Continuous Predictors
 # Distances 
 
 fig1 <- ggplot(data = df, mapping = aes(x = dist, fill = switch)) +
-  geom_density(alpha = 0.6) + labs(x  = "Distance (m) to nearest safe well", y = "Density", 
-       title = "Distance to Wells", caption = "Figure 1")
+  geom_density(alpha = 0.6) + labs(x  = "Distance (m)", y = "Density", 
+       title = "Distance to Wells")
     
 # Education (Recoded)
 fig2 <- ggplot(data = df, mapping = aes(x = educ4, fill = switch)) +
   geom_bar(position = "stack") + 
   labs (x = "Years of Education", y = "Frequency", 
-       title = "Education (Recoded)", caption = "Figure 2")
+       title = "Education (Recoded)")
 
 # Perceived Status
 fig3 <- ggplot(data = df, mapping = aes(x = status_perceived, fill = switch)) +
   geom_bar(position = "stack") + 
   labs (x = "Perceived Status", y = "Frequency", 
-       title = "Perceived Status", caption = "Figure 3")
+       title = "Perceived Status")
 
 # Shift
 fig4 <- ggplot(data = df, mapping = aes(x = well_shift, fill = switch)) +
   geom_bar(position = "stack") + 
   labs (x = "Well Shift (Last 3 Years)", y = "Frequency", 
-       title = "Well Shift (Last 3 Years)", caption = "Figure 4")
-
+       title = "Well Shift (Last 3 Years)")
+grid.arrange(fig1, fig2, fig3, fig4, ncol=2)
+```
+```{r, echo=FALSE, cache=TRUE, fig.height=2.5, fig.width=5}
 ### Response Variable
 fig5 <- ggplot(data = df, mapping = aes(x = switch)) +
   geom_bar(fill = "dark green") + 
-  labs (x = "Well Switch*", y = "Frequency",
-        caption = "Figure 5",
-        title = "Well Switch (Response)")
-
-grid.arrange(fig1, fig2, fig3, fig4, ncol=2)
+  labs (x = "Switched Wells*", y = "Frequency",
+        caption = "*0 = No, 1 = Yes",
+        title = "Well Switching")
 fig5
 
 ```
+
+\vspace{5mm}
+
+Figure 1: Selected EDA plots (see Appendix A for full EDA)
+
+\vspace{10mm}
 
 All observations that were included in this analysis had the arsenic concentration of their well above the Bangladesh standard of $50\space\mu g/L$. The maximum was nearly 20 times the safe concentration threshold ($965\space\mu g/L$), which highlights the urgency of the issue that needs to be addressed. Initially, it seems that arsenic content is less of a significant predictor than perceived well status and distance to nearest safe well, but interactions with other predictors are intuitively reasonable; perhaps households decide whether to switch their well based on a combination of perceptions (`status_perceived`) and science (`arsenic`), or perhaps wells that are far from the nearest safe well (`dist`) are also likely to be particularly high in arsenic concentration (`arsenic`). 
 
 The relative proportions of switch to no switch seem consistent regardless of community association, which suggests community association is not the most important predictor. However, community association should still be included in the initial model before any model selection to confirm our EDA observations are supported. 
 
-The years of education vary greatly among households; majority either have no formal education or five years. The fact that some of the levels have limited observations makes it increasingly difficult to determine if there is a significant effect, which motivated the recoding of the education variable into 4 levels. As expected, 0 years is still most frequent, but now we can argue that the overall population of interest has between 0-12 years of education (up to high school) and anything beyond (tertiary education) seems to be a luxury. Moreover, from Figure 2 it is evident that among those who have completed more than 12 years of education, most did not choose to switch. This decision could be influenced however by the fact that most of those households also do not use the water from the well for drinking or cooking, but this relationship needs to be investigated further (potential interaction between `educ` and `use`). The vast majority of households use wells for both drinking and cooking, or neither; those who do not use wells for drinking and cooking, as expected, responded they would switch most frequently.
+The years of education vary greatly among households; majority either have no formal education or five years. The fact that some of the levels have limited observations makes it increasingly difficult to determine if there is a significant effect, which motivated the recoding of the education variable into 4 levels. As expected, 0 years is still most frequent, but now we can argue that the overall population of interest has between 0-12 years of education (up to high school) and anything beyond (tertiary education) seems to be a luxury. Moreover, from Figure 1 it is evident that among those who have completed more than 12 years of education, most did not choose to switch. This decision could be influenced however by the fact that most of those households also do not use the water from the well for drinking or cooking, but this relationship needs to be investigated further (potential interaction between `educ` and `use`). The vast majority of households use wells for both drinking and cooking, or neither; those who do not use wells for drinking and cooking, as expected, responded they would switch most frequently.
 
 The univariate distribution of distances confirms our initial suspicions about the proximity of safe and unsafe wells. Summary statistics indicate that the maximum distance to the nearest safe well is 339.531 meters (which is reasonable for daily round trips (double distance); assume speed 1 m/s, then roughly 340 s ~ 5.7 min) and the average distance is 48.332 m. From Figure 1, it is evident that the densities do not exactly align, which supports the claim that the distance to the nearest safe well is not the only significant covariate. There is a noticeable difference in the propensity of households to switch when the distance to the nearest safe well is between 0-200 m (switching occurs with greatest probability when distance to nearest safe well is between 0-50 m), and at the tails (i.e. when the distance exceeds approximately 230 m), the densities overlap. There are also some noticeable interactions between distance and well use, since well purpose determines frequency of use and daily travel time, and between distance and perceived status, since some households did not switch even with small distances perhaps due to a misassessment of the associated risk.
 
-Based on the plot of well shift in the last 3 years and the response (Figure 4), there is evidence in the data suggesting that this covariate should be significant in the logistic regression model; note that all of the households which shifted to a different well in the past three years, expected to switch once more when informed about the unsafe well.
+Based on the plot of well shift in the last 3 years and the response (Figure 1), there is evidence in the data suggesting that this covariate should be significant in the logistic regression model; note that all of the households which shifted to a different well in the past three years, expected to switch once more when informed about the unsafe well.
 
-Similarly, based on the plot of perceived well status and the response (Figure 3), there is evidence in the data suggesting that this covariate should be significant in the logistic regression model (there are seemingly significant differences, at least visually, among levels of predictor); note that a significant proportion of households who believed the well to be unsafe, still chose not to switch.
+Similarly, based on the plot of perceived well status and the response (Figure 1), there is evidence in the data suggesting that this covariate should be significant in the logistic regression model (there are seemingly significant differences, at least visually, among levels of predictor); note that a significant proportion of households who believed the well to be unsafe, still chose not to switch.
 
 ### Modeling 
 
@@ -393,40 +399,12 @@ round(mean(xor(ploo>0.5,as.integer(wells$switch==0))),3)
 
 ```
 
-```{r diagnostics, cache = TRUE}
-#dist
-matrix <- as.matrix(no_educ_interac)
-trace.dist <- plot(matrix[,2], type="l")
-acf.dist <- acf(matrix[,2])
-#dist
-trace.dist <- plot(matrix[,3], type="l")
-acf.dist <- acf(matrix[,3])
-#dist
-trace.dist <- plot(matrix[,4], type="l")
-acf.dist <- acf(matrix[,4])
-#dist
-trace.dist <- plot(matrix[,5], type="l")
-acf.dist <- acf(matrix[,5])
-#dist
-trace.dist <- plot(matrix[,6], type="l")
-acf.dist <- acf(matrix[,6])
-#dist
-trace.dist <- plot(matrix[,7], type="l")
-acf.dist <- acf(matrix[,7])
-#
-trace.dist <- plot(matrix[,8], type="l")
-acf.dist <- acf(matrix[,8])
-```
-
 ### Final Model
 The posterior regression coefficients are given in the following table:
-```{r}
-round(coef(no_educ_interac), 3)
-round(posterior_interval(no_educ_interac, prob = 0.95), 3)
-```
 
-### Final Model
-```{r}
+\vspace{10mm}
+
+```{r, echo=FALSE}
 data.frame(Coefficient = round(coef(no_educ_interac), 3),
            Interval = round(posterior_interval(no_educ_interac, prob = 0.95), 3)) %>%
   kable()
@@ -435,7 +413,7 @@ data.frame(Coefficient = round(coef(no_educ_interac), 3),
 
 ### Model Diagnostics
 
-The final model goodness-of-fit as well as MCMC convergence and mixing performance was checked via diagnostics. To check the model goodness-of-fit, we assesed the classification accuracy of the model. We calculated the posterior predictive probabilities. If the posterior predictive probability of success (switching wells) for an individual household is greater than or equal to $0.5$, then we would predict that observation to be a success (and analogously for less than $0.5$). For each observation, we can then compare the posterior prediction to the actual observed value (whether the household did switch wells). The resulting classification accuracy can be determined via a Leave-One-Out Cross Validation (LOOCV) approach, which uses importance weights generated from the `loo()` function. We found that the estimated classification accuracy for the final model is 0.66, which is indicative of a model with moderate predictive accuracy. However, this is not the most precise estimate, since we did not use unseen observations (test set). Instead, we used all of the available data in fitting the model. According to the trace plots for all posterior regression coefficients except the one associated with `well_shift`, the MCMC chains appear to converge immediately and mix well. Similarly, the Auto Correlation Function (ACF) plots for all posterior regression coefficients, except the one associated with `well_shift`, demonstrate that there is no significant autocorrelation between contiguous samples (since the bars in the plots are low). On the other hand, the trace plot corresponding to the posterior regression coefficient associated with `well_shift` illustrates how the MCMC chain converges slowly and mixes poorly. Also, there is significant autocorrelation between contiguous samples (since the bars in the plots are high). In an attempt to address this issue, we considered including additional interaction terms (which were supported by the EDA), but were unable to do so due to computational constraints.
+The final model goodness-of-fit as well as MCMC convergence and mixing performance was checked via diagnostics. To check the model goodness-of-fit, we assesed the classification accuracy of the model. We calculated the posterior predictive probabilities. If the posterior predictive probability of success (switching wells) for an individual household is greater than or equal to $0.5$, then we would predict that observation to be a success (and analogously for less than $0.5$). For each observation, we can then compare the posterior prediction to the actual observed value (whether the household did switch wells). The resulting classification accuracy can be determined via a Leave-One-Out Cross Validation (LOOCV) approach, which uses importance weights generated from the `loo()` function. We found that the estimated classification accuracy for the final model is 0.66, which is indicative of a model with moderate predictive accuracy. However, this is not the most precise estimate, since we did not use unseen observations (test set). Instead, we used all of the available data in fitting the model. According to the trace plots (see Appendix B) for all posterior regression coefficients except the one associated with `well_shift`, the MCMC chains appear to converge immediately and mix well. Similarly, the Auto Correlation Function (ACF) plots (see Appendix B) for all posterior regression coefficients, except the one associated with `well_shift`, demonstrate that there is no significant autocorrelation between contiguous samples (since the bars in the plots are low). On the other hand, the trace plot corresponding to the posterior regression coefficient associated with `well_shift` illustrates how the MCMC chain converges slowly and mixes poorly. Also, there is significant autocorrelation between contiguous samples (since the bars in the plots are high). In an attempt to address this issue, we considered including additional interaction terms (which were supported by the EDA), but were unable to do so due to computational constraints.
 
 ### Conclusions and Limitations
 
@@ -463,37 +441,15 @@ Our dataset is limited to a single upazila within Bangladesh, so any conclusions
 
 - Water, sanitation and hygiene (WASH). UNICEF South Asia. (n.d.). https://www.unicef.org/rosa/water-sanitation-and-hygiene-wash. 
 
-### Appendix
+### Appendix A
 
 Here we have displayed the full EDA, which was omitted from the report.
 
-```{r echo=FALSE, fig.height=4, fig.width=6.5}
-### Continuous Predictors
-# Distances 
-hist(dist, breaks=seq(0,10+max(dist[!is.na(dist)]),10), 
-     xlab="Distance (m) to nearest safe well", ylab="Frequency", 
-     main="Distance to Wells")
-wells %>%
-  summarise(min = min(dist),
-            max = max(dist),
-            mean = mean(dist), 
-            sd = sd(dist), 
-            median = median(dist), 
-            IQR = IQR(dist)) %>%
-  kable(digits = 3)
-    
-# Arsenic 
-hist(arsenic, breaks=seq(0,100+max(arsenic[!is.na(arsenic)]),50), 
-     xlab="Arsenic Content (micrograms per liter)", ylab="Frequency", main="Arsenic Content")
-wells %>%
-  summarise(min = min(arsenic),
-            max = max(arsenic),
-            mean = mean(arsenic), 
-            sd = sd(arsenic), 
-            median = median(arsenic), 
-            IQR = IQR(arsenic)) %>%
-  kable(digits = 3)
+\vspace{10mm}
 
+```{r echo=FALSE, fig.height=3, fig.width=6.5}
+### Continuous Predictors
+# Arsenic 
 ggplot(data = df, mapping = aes(x = arsenic, fill = switch)) +
   geom_density(alpha = 0.6) +
   labs(x  = "Arsenic Content (micrograms per liter)", y = "Density", 
@@ -501,16 +457,6 @@ ggplot(data = df, mapping = aes(x = arsenic, fill = switch)) +
     
 ### Discrete Predictors
 # Education 
-hist(educ, breaks=seq(0,5+max(educ[!is.na(educ)]),5), xlab="Years of Education",
-     ylab="Frequency", main="Education")
-wells %>%
-  summarise(min = min(educ),
-            max = max(educ),
-            mean = mean(educ), 
-            sd = sd(educ), 
-            median = median(educ), 
-            IQR = IQR(educ)) %>%
-  kable(digits = 3)
 ggplot(data = df, mapping = aes(x = educ, fill = switch)) +
   geom_histogram(binwidth = 1) +
   labs(x  = "Years of Education", y = "Frequency", 
@@ -531,13 +477,13 @@ ggplot(data = df, mapping = aes(x = use, fill = switch)) +
 ### Interactions
 
 ggplot(data = df, mapping = aes(x = dist, fill = use)) +
-  geom_density(alpha = 0.3) + labs(x  = "Distance (m) to nearest safe well", y = "Density", 
+  geom_density(alpha = 0.3) + labs(x  = "Distance (m) to Nearest Safe Well", y = "Density", 
        title = "Distance to Wells vs Well Use")
 ggplot(data = df, mapping = aes(x = dist, fill = status_perceived)) +
-  geom_density(alpha = 0.6) + labs(x  = "Distance (m) to nearest safe well", y = "Density", 
+  geom_density(alpha = 0.6) + labs(x  = "Distance (m) to Nearest Safe Well", y = "Density", 
        title = "Distance to Wells vs Perceived Status")
 ggplot(data = df, mapping = aes(x = dist, fill = well_shift)) +
-  geom_density(alpha = 0.6) + labs(x  = "Distance (m) to nearest safe well", y = "Density", 
+  geom_density(alpha = 0.6) + labs(x  = "Distance (m) to Nearest Safe Well", y = "Density", 
        title = "Distance to Wells vs Well Shift")
 
 ggplot(data = df, mapping = aes(x = arsenic, fill = use)) +
@@ -545,7 +491,38 @@ ggplot(data = df, mapping = aes(x = arsenic, fill = use)) +
        title = "Arsenic Content vs Well Use")
 
 ggplot(data = df, mapping = aes(x = arsenic, y = dist)) +
-  geom_point() + labs(x  = "Arsenic Content (micrograms per liter)", y = "Distance (m) to nearest safe well", 
+  geom_point() + labs(x  = "Arsenic Content (micrograms per liter)", y = "Distance (m) to Nearest Safe Well", 
        title = "Arsenic Content vs Distance to Wells")
+```
+
+### Appendix B
+
+Here we have displayed the relevant plots for model diagnostics, which are referenced in the report.
+
+\vspace{10mm}
+
+```{r diagnostics, echo=FALSE, fig.height=4, fig.width=6.5}
+#dist
+matrix <- as.matrix(no_educ_interac)
+trace.dist <- plot(matrix[,2], type="l")
+acf.dist <- acf(matrix[,2])
+#dist
+trace.dist <- plot(matrix[,3], type="l")
+acf.dist <- acf(matrix[,3])
+#dist
+trace.dist <- plot(matrix[,4], type="l")
+acf.dist <- acf(matrix[,4])
+#dist
+trace.dist <- plot(matrix[,5], type="l")
+acf.dist <- acf(matrix[,5])
+#dist
+trace.dist <- plot(matrix[,6], type="l")
+acf.dist <- acf(matrix[,6])
+#dist
+trace.dist <- plot(matrix[,7], type="l")
+acf.dist <- acf(matrix[,7])
+#
+trace.dist <- plot(matrix[,8], type="l")
+acf.dist <- acf(matrix[,8])
 ```
 
